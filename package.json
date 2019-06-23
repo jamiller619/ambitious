@@ -1,0 +1,33 @@
+{
+  "name": "ambitious",
+  "version": "0.0.1",
+  "main": "src/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "BABEL_ENV=build rollup -c scripts/rollup.config.js && node scripts/create-packages.js",
+    "dev": "BABEL_ENV=build rollup -c scripts/rollup.config.js -w",
+    "version": "npm version patch",
+    "pub": "yarn build && npm publish",
+    "lint": "prettier --write src/**/*.js && eslint src/**",
+    "test": "BABEL_ENV=test jest --verbose --watch --runInBand",
+    "coverage": "BABEL_ENV=test jest --coverage"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.4.5",
+    "@babel/plugin-transform-runtime": "^7.4.4",
+    "@babel/preset-env": "^7.4.5",
+    "babel-eslint": "^10.0.2",
+    "eslint": "^5.16.0",
+    "eslint-plugin-babel": "^5.3.0",
+    "fs-extra": "^8.0.1",
+    "jest": "^24.8.0",
+    "prettier": "^1.18.2",
+    "rollup": "^1.15.6",
+    "rollup-plugin-babel": "^4.3.2",
+    "rollup-plugin-babel-minify": "^8.0.0",
+    "rollup-plugin-cleanup": "^3.1.1",
+    "rollup-plugin-commonjs": "^10.0.0",
+    "rollup-plugin-filesize": "^6.1.0",
+    "rollup-plugin-node-resolve": "^5.0.3"
+  }
+}
