@@ -46,10 +46,10 @@ const BaseComponent = {
 
       updateProps(node, currentElement, nextElement)
 
-      await patch(diffChildren(this, currentElement, nextElement))
-    } else {
-      this.parent.replaceChild(nextElement, currentElement)
+      return patch(diffChildren(this, currentElement, nextElement))
     }
+
+    return this.parent.replaceChild(nextElement, currentElement)
   },
 
   async replaceChild(newElement, oldElement) {
@@ -96,8 +96,12 @@ const BaseComponent = {
     const newChildComponent = createComponent(newElement, this)
     const newChildNode = newChildComponent.render()
 
+    await dispatchEvents(LIFECYCLE_EVENTS.BEFORE_MOUNT, newChildComponent)
+
     this.getNode().appendChild(newChildNode)
     this.children.push(newChildComponent)
+
+    dispatchEvents(LIFECYCLE_EVENTS.MOUNT, newChildComponent)
   },
 
   async insertBefore(newElement, referenceElement) {

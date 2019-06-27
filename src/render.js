@@ -4,7 +4,8 @@ import {
   eventProxy,
   isNullOrFalse,
   XLINK_NS,
-  isArray
+  isArray,
+  COMPONENT_TYPES
 } from './utils'
 import createElement from './createElement'
 import createComponent from './components/createComponent'
@@ -188,30 +189,25 @@ const updateProp = (node, key, value, isSvg) => {
 }
 
 export const dispatchEvent = async (type, node) => {
-  // const eventHandler = node[eventsKey] && node[eventsKey][type]
+  const eventHandler = node[eventsKey] && node[eventsKey][type]
 
-  // if (eventHandler) {
-  //   return eventHandler.call(node, node)
-  // }
-  //
-  return null
+  if (eventHandler) {
+    return eventHandler.call(node, node)
+  }
 }
 
 export const dispatchEvents = async (type, component) => {
-  // type = type.toLowerCase()
-  // const node = component.getNode()
+  const t = type.toLowerCase()
+  const node = component.getNode()
+  const children = component
+    .getChildren()
+    .filter(child => child.$$typeof !== COMPONENT_TYPES.TEXT)
 
-  // await Promise.all(
-  //   component
-  //     .getChildren()
-  //     .filter(child => child.$$typeof !== COMPONENT_TYPES.TEXT)
-  //     .map(child => dispatchEvents(type, child))
-  // )
+  await Promise.all(children.map(child => dispatchEvents(t, child)))
 
-  // if (node) {
-  //   return dispatchEvent(type, node)
-  // }
-  return null
+  if (node) {
+    return dispatchEvent(t, node)
+  }
 }
 
 const createCSSValueIterator = value => {

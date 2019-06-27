@@ -44,7 +44,7 @@ const CompoundComponent = {
     if (areObjectsEqual(nextState, this.state) === false) {
       const nextElement = this.renderComponent(nextState)
 
-      this.children[0].update(nextElement)
+      await this.children[0].update(nextElement)
 
       dispatchEvents(LIFECYCLE_EVENTS.UPDATE, this.children[0])
     }
