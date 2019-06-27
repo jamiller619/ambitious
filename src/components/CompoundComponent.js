@@ -1,9 +1,4 @@
-import {
-  COMPONENT_TYPES,
-  LIFECYCLE_EVENTS,
-  freeze,
-  areObjectsEqual
-} from '../utils'
+import { COMPONENT_TYPES, LIFECYCLE_EVENTS, freeze, isEqual } from '../utils'
 import { dispatchEvents } from '../render'
 import createComponent from './createComponent'
 
@@ -41,7 +36,7 @@ const CompoundComponent = {
   async setState(partialState) {
     const nextState = Object.assign({}, this.state, partialState)
 
-    if (areObjectsEqual(nextState, this.state) === false) {
+    if (isEqual(nextState, this.state) === false) {
       const nextElement = this.renderComponent(nextState)
 
       await this.children[0].update(nextElement)

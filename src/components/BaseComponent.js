@@ -1,4 +1,4 @@
-import { LIFECYCLE_EVENTS, canUpdateComponent } from '../utils'
+import { LIFECYCLE_EVENTS } from '../utils'
 import { dispatchEvents, updateProps, patch, diffChildren } from '../render'
 import createComponent from './createComponent'
 
@@ -41,7 +41,10 @@ const BaseComponent = {
   async update(nextElement) {
     const currentElement = this.element
 
-    if (canUpdateComponent(currentElement, nextElement)) {
+    if (
+      currentElement.type === nextElement.type &&
+      currentElement.key === nextElement.key
+    ) {
       const node = this.getNode()
 
       updateProps(node, currentElement, nextElement)

@@ -17,16 +17,6 @@ export const LIFECYCLE_EVENTS = {
 export const SVG_NS = 'http://www.w3.org/2000/svg'
 export const XLINK_NS = 'http://www.w3.org/1999/xlink'
 
-const generateId = () =>
-  Math.random()
-    .toString(36)
-    .replace('0.', '')
-
-export const eventsKey = `$$events__${generateId()}`
-export const eventProxy = event => {
-  return event.currentTarget[eventsKey][event.type](event)
-}
-
 export const isArray = Array.isArray
 export const isNullOrFalse = t =>
   t == null || t === false || t === 'false' || t === 0
@@ -40,31 +30,7 @@ export const flatten = arr =>
     []
   )
 
-export const hasMatchingKeys = (a, b, ai, bi) => {
-  const akey = a.key || ai
-  const bkey = b.key || bi
-
-  return a && b && akey === bkey
-}
-
-export const canUpdateComponent = (
-  prevElement,
-  nextElement,
-  prevElementIndex = 0,
-  nextElementIndex = 0
-) => {
-  return (
-    prevElement.type === nextElement.type &&
-    hasMatchingKeys(
-      prevElement,
-      nextElement,
-      prevElementIndex,
-      nextElementIndex
-    )
-  )
-}
-
-export const areObjectsEqual = (a, b) => {
+export const isEqual = (a, b) => {
   if (a == null || b == null) {
     return false
   }

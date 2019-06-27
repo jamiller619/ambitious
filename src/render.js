@@ -1,7 +1,5 @@
 import {
   flatten,
-  eventsKey,
-  eventProxy,
   isNullOrFalse,
   XLINK_NS,
   isArray,
@@ -188,28 +186,6 @@ const updateProp = (node, key, value, isSvg) => {
   }
 }
 
-export const dispatchEvent = async (type, node) => {
-  const eventHandler = node[eventsKey] && node[eventsKey][type]
-
-  if (eventHandler) {
-    return eventHandler.call(node, node)
-  }
-}
-
-export const dispatchEvents = async (type, component) => {
-  const t = type.toLowerCase()
-  const node = component.getNode()
-  const children = component
-    .getChildren()
-    .filter(child => child.$$typeof !== COMPONENT_TYPES.TEXT)
-
-  await Promise.all(children.map(child => dispatchEvents(t, child)))
-
-  if (node) {
-    return dispatchEvent(t, node)
-  }
-}
-
 const createCSSValueIterator = value => {
   if (value == null || value === false) {
     return []
@@ -232,4 +208,36 @@ const createCSSValueIterator = value => {
   }
 
   return flatten(classList)
+}
+
+const generateId = () =>
+  Math.random()
+    .toString(36)
+    .replace('0.', '')
+
+const eventsKey = `$$events__${generateId()}`
+const eventProxy = event => {
+  return event.currentTarget[eventsKey][event.type](event)
+}
+
+export const dispatchEvent = async (type, node) => {
+  const eventHandler = node[eventsKey] && node[eventsKey][type]
+
+  if (eventHandler) {
+    return eventHandler.call(node, node)
+  }
+}
+
+export const dispatchEvents = async (type, component) => {
+  const t = type.toLowerCase()
+  const node = component.getNode()
+  const children = component
+    .getChildren()
+    .filter(child => child.$$typeof !== COMPONENT_TYPES.TEXT)
+
+  await Promise.all(children.map(child => dispatchEvents(t, child)))
+
+  if (node) {
+    return dispatchEvent(t, node)
+  }
 }
