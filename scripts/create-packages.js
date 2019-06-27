@@ -13,6 +13,9 @@ const json = JSON.parse(pkg)
 delete json.devDependencies
 delete json.scripts
 json.main = 'ambitious.js'
+const parts = json.version.split('.')
+const patch = [parts[0], parts[1], parts[2] * 1 + 1].join('.')
+json.version = patch
 
 packages.forEach(pkg => {
   fs.ensureDir(DIST(pkg))

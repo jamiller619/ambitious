@@ -1,229 +1,239 @@
-import { SVG_NS, COMPONENT_TYPES } from './utils'
-import { updateProps, diff } from './reconciler'
+import {
+  flatten,
+  eventsKey,
+  eventProxy,
+  isNullOrFalse,
+  XLINK_NS,
+  isArray
+} from './utils'
+import createElement from './createElement'
+import createComponent from './components/createComponent'
 
-export const mount = (element, containerNode) => {
+export const mount = async (element, containerNode) => {
   if (containerNode.firstChild) {
     while (containerNode.firstChild) {
       containerNode.removeElement(containerNode.firstChild)
     }
   }
 
-  containerNode.append(render(element))
+  const rootElement = createElement(containerNode)
+  const root = createComponent(rootElement)
 
-  return containerNode
+  await root.appendChild(element)
+
+  return root
 }
 
-export default function render(element, ...args) {
-  const component = createComponent(element)
-  return component.render(...args)
+export const patch = diffs => {
+  return new Promise(resolve => {
+    window.requestAnimationFrame(async () => {
+      const operations = flatten(diffs)
+
+      if (operations.length > 0) {
+        await Promise.all(
+          operations.map(async diff =>
+            diff != null && diff.action ? diff.action() : diff()
+          )
+        )
+      }
+
+      resolve()
+    })
+  })
 }
 
-const createComponent = element => {
-  return new (typeof element.type === 'function'
-    ? CompoundComponent
-    : typeof element === 'string' || typeof element === 'number'
-    ? TextComponent
-    : element.type === COMPONENT_TYPES.FRAGMENT
-    ? FragmentComponent
-    : HostComponent)(element)
-}
+export const diffChildren = (currentComponent, currentElement, nextElement) => {
+  const queue = []
+  const currentChildren = currentElement.props.children
+  const nextChildren = nextElement.props.children
 
-function Component(element, $$typeof) {
-  this.$$typeof = $$typeof
-  this.element = element
-  this.children = []
-}
+  let i = 0,
+    length = nextChildren.length
 
-Component.prototype = {
-  getHostNode() {
-    return this.node.parentNode
-  },
-  async addChild(newChildComponent) {
-    const host = this.getHostNode()
+  for (; i < length; i++) {
+    const nextChild = nextChildren[i]
+    const nextKey = nextChild.key || i
 
-    host.appendChild(newChildComponent.render())
-
-    this.children.push(newChildComponent)
-  },
-  async insertBefore(newChildComponent, referenceChildComponent) {
-    const host = this.getHostNode()
-    const refIndex = this.children.findIndex(
-      child => child === referenceChildComponent
+    // Find the cooresponding element in the current set of children
+    const match = currentChildren.find((child, n) =>
+      child.key ? child.key === nextKey : i === n
     )
 
-    host.insertBefore(newChildComponent.render(), referenceChildComponent.node)
+    // If no match was found, this is a new node
+    if (!match) {
+      // If a current child exists at the current index,
+      // insert the new child immediately before that node
+      // If there is no current child, append it
+      const currentChild = currentChildren[i]
 
-    this.children.splice(refIndex, 0, newChildComponent)
-  },
-  async replaceChild(newChildComponent, oldChildComponent) {
-    const host = this.getHostNode()
-    const childIndex = this.children.findIndex(
-      child => child === oldChildComponent
-    )
+      if (currentChild) {
+        currentComponent.insertBefore(nextChild, currentChildren[i])
+      } else {
+        currentComponent.appendChild(nextChild)
+      }
+    } else {
+      // We found a match, let the component handle the update
+      currentComponent.updateChild(match, nextChild)
+    }
+  }
 
-    host.replaceChild(newChildComponent.render(), oldChildComponent)
+  const remainingChildren = currentChildren.slice(i)
 
-    this.children[childIndex] = newChildComponent
-  },
-  async removeChild(oldChildComponent) {
-    const oldChildIndex = this.children.findIndex(
-      child => child === oldChildComponent
-    )
+  if (remainingChildren.length) {
+    currentChildren.forEach(child => currentComponent.removeChild(child))
+  }
 
-    this.getHostNode().removeChild(oldChildComponent)
+  currentComponent.element = nextElement
 
-    this.children.splice(oldChildIndex, 1)
+  return queue
+}
+
+const reservedPropNames = ['list', 'draggable', 'spellcheck', 'translate']
+
+export const updateProps = (node, oldElement, newElement, isSvg) => {
+  const merged = Object.assign({}, (oldElement || {}).props, newElement.props)
+
+  for (const attribute in merged) {
+    updateProp(node, attribute, merged[attribute], isSvg)
   }
 }
 
-/**
- * Compound Component
- *
- */
+const updateProp = (node, key, value, isSvg) => {
+  if (key.startsWith('on')) {
+    if (!node[eventsKey]) {
+      node[eventsKey] = {}
+    }
 
-function CompoundComponent(element) {
-  Component.call(this, element, COMPONENT_TYPES.COMPOUND)
+    const name = key.slice(2).toLowerCase()
 
-  this.state = element.type.defaultState || {}
-  this.children = [this.createInstance()]
-}
+    if (value == null) {
+      node.removeEventListener(name, eventProxy)
+    } else if (node[eventsKey][name] == null) {
+      node.addEventListener(name, eventProxy)
+    }
 
-CompoundComponent.prototype = {
-  render() {
-    return this.children[0].render()
-  },
-  getHostNode() {
-    return this.children[0].getHostNode()
-  },
-  get node() {
-    return this.children[0].node
-  },
-  createInstance() {
-    return createComponent(
-      this.element.type(
-        this.element.props,
-        this.state,
-        this.setState.bind(this)
-      )
-    )
-  },
-  async setState(newState) {
-    const nextState = Object.assign({}, this.state, newState)
+    node[eventsKey][name] = value
+  } else if (node.nodeType !== 11) {
+    if (key === 'style') {
+      if (typeof value === 'object') {
+        Object.entries(value).forEach(([styleProp, styleValue]) => {
+          if (node.style[styleProp] !== styleValue) {
+            node.style[styleProp] = styleValue
+          }
+        })
+      } else {
+        node.style.cssText = value
+      }
+    } else if (key === 'class' || key === 'className') {
+      const oldCssClasses = node.classList
+      const newCssClasses = createCSSValueIterator(value)
 
-    if (nextState !== this.state) {
-      this.state = nextState
+      if (oldCssClasses.length === 0) {
+        if (newCssClasses.length > 0) {
+          newCssClasses.forEach(cssClass => {
+            if (cssClass !== '') {
+              node.classList.add(cssClass)
+            }
+          })
+        }
+      } else if (newCssClasses.length === 0) {
+        node.classList.remove(...oldCssClasses)
+      } else {
+        new Set([...oldCssClasses, ...newCssClasses]).forEach(cssClass => {
+          if (!newCssClasses.includes(cssClass)) {
+            node.classList.remove(cssClass)
+          } else if (cssClass !== '' && !oldCssClasses.contains(cssClass)) {
+            node.classList.add(cssClass)
+          }
+        })
+      }
+    } else if (key !== 'children') {
+      if (isSvg === false) {
+        if (
+          key in node &&
+          !reservedPropNames.includes(key) &&
+          node[key] != value
+        ) {
+          node[key] = value == null ? '' : value === 'false' ? false : value
+        }
+      } else {
+        const name = key.replace(/^xlink:?/, '')
+        const ns = isSvg && key !== name
 
-      const prevInstance = this.children[0]
-      const prevInstanceNode = prevInstance.node
-
-      const nextInstance = this.createInstance()
-
-      await diff(prevInstanceNode, this, prevInstance, nextInstance)()
-
-      // console.log(prevInstance)
-      // console.log(patched)
-
-      // dispatchEvents(LIFECYCLE_EVENTS.UPDATE, this.element)
+        if (ns) {
+          if (isNullOrFalse(value)) {
+            node.removeAttributeNS(XLINK_NS, name)
+          } else if (
+            !node.hasAttributeNS(XLINK_NS, name) ||
+            (node.hasAttributeNS(XLINK_NS, name) &&
+              node.getAttributeNS(XLINK_NS, name) != value)
+          ) {
+            node.setAttributeNS(XLINK_NS, name, value)
+          }
+        } else {
+          if (isNullOrFalse(value)) {
+            node.removeAttribute(name)
+          } else if (node.hasAttribute) {
+            if (
+              !node.hasAttribute(name) ||
+              (node.hasAttribute(name) && node.getAttribute(name) != value)
+            ) {
+              node.setAttribute(name, value)
+            }
+          }
+        }
+      }
     }
   }
 }
 
-/**
- * Host Component
- *
- */
+export const dispatchEvent = async (type, node) => {
+  // const eventHandler = node[eventsKey] && node[eventsKey][type]
 
-function HostComponent(element) {
-  Component.call(this, element, COMPONENT_TYPES.HOST)
+  // if (eventHandler) {
+  //   return eventHandler.call(node, node)
+  // }
+  //
+  return null
+}
 
-  if (element.props.children.length > 0) {
-    this.children = element.props.children.map(child => createComponent(child))
+export const dispatchEvents = async (type, component) => {
+  // type = type.toLowerCase()
+  // const node = component.getNode()
+
+  // await Promise.all(
+  //   component
+  //     .getChildren()
+  //     .filter(child => child.$$typeof !== COMPONENT_TYPES.TEXT)
+  //     .map(child => dispatchEvents(type, child))
+  // )
+
+  // if (node) {
+  //   return dispatchEvent(type, node)
+  // }
+  return null
+}
+
+const createCSSValueIterator = value => {
+  if (value == null || value === false) {
+    return []
   }
-}
 
-HostComponent.prototype = {
-  render(isSvg = false) {
-    const { element } = this
-    const isNodeSvg =
-      isSvg || (element && element.type && element.type.toLowerCase() === 'svg')
-    const node = (this.node = isNodeSvg
-      ? document.createElementNS(SVG_NS, element.type)
-      : document.createElement(element.type))
+  let classList = []
 
-    updateProps(node, null, element, isNodeSvg)
-
-    node.append(...this.children.map(component => component.render(isNodeSvg)))
-
-    return (this.node = node)
+  if (isArray(value)) {
+    classList = value.map(className => createCSSValueIterator(className))
+  } else {
+    classList = value
+      .split(',')
+      .join(' ')
+      .split(' ')
+      .map(className => className.trim())
+      .filter(
+        className =>
+          className != null && className !== false && className !== ''
+      )
   }
+
+  return flatten(classList)
 }
-
-/**
- * Text Component
- *
- */
-
-function TextComponent(element) {
-  Component.call(this, element, COMPONENT_TYPES.TEXT)
-  this.text = element
-}
-
-TextComponent.prototype = {
-  render() {
-    return (this.node = document.createTextNode(this.text))
-  },
-  update(nextComponent) {
-    this.text = this.node.textContent = this.element = nextComponent.element
-  }
-}
-
-/**
- * Fragment Component
- *
- */
-
-function FragmentComponent(element) {
-  Component.call(this, element, COMPONENT_TYPES.FRAGMENT)
-  this.children = [this.createInstance()]
-}
-
-FragmentComponent.prototype = {
-  render() {
-    const container = document.createDocumentFragment()
-
-    container.append(...this.children.map(child => child.render()))
-
-    return container
-  },
-  get node() {
-    return this.children[0].node
-  },
-  createInstance() {
-    return this.children.map(child => createComponent(child))
-  }
-}
-
-const ComponentProto = () => Object.create(Component.prototype)
-
-const assignComplete = (target, ...sources) => {
-  sources.forEach(source => {
-    let descriptors = Object.keys(source).reduce((descriptors, key) => {
-      descriptors[key] = Object.getOwnPropertyDescriptor(source, key)
-      return descriptors
-    }, {})
-    // by default, Object.assign copies enumerable Symbols too
-    Object.getOwnPropertySymbols(source).forEach(sym => {
-      let descriptor = Object.getOwnPropertyDescriptor(source, sym)
-      if (descriptor.enumerable) {
-        descriptors[sym] = descriptor
-      }
-    })
-    Object.defineProperties(target, descriptors)
-  })
-
-  return target
-}
-
-assignComplete(ComponentProto(), CompoundComponent.prototype)
-assignComplete(ComponentProto(), HostComponent.prototype)
-assignComplete(ComponentProto(), TextComponent.prototype)
