@@ -3,7 +3,8 @@ export const COMPONENT_TYPES = {
   HOST: 'HOST',
   FRAGMENT: 'FRAGMENT',
   TEXT: 'TEXT',
-  RECYCLED: 'RECYCLED'
+  RECYCLED: 'RECYCLED',
+  EMPTY: 'EMPTY'
 }
 
 export const LIFECYCLE_EVENTS = {

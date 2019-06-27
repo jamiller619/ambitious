@@ -7,6 +7,7 @@ const CompoundComponent = {
   $$typeof: COMPONENT_TYPES.COMPOUND,
 
   construct(element) {
+    this.displayName = element.type.name
     const state = element.type.defaultState || {}
 
     this.children = [createComponent(this.renderComponent(state), this)]
@@ -27,7 +28,9 @@ const CompoundComponent = {
       currentElement.type !== nextElement.type ||
       currentElement.key !== nextElement.key
     ) {
-      return this.parent.replaceChild(nextElement, currentElement)
+      await this.parent.insertBefore(nextElement, currentElement)
+      return this.parent.removeChild(currentElement)
+      // return this.parent.replaceChild(nextElement, currentElement)
     }
 
     this.element = nextElement

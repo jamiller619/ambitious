@@ -1,17 +1,23 @@
 import { COMPONENT_TYPES } from '../utils'
+import createElement from '../createElement'
 import {
   CompoundComponent,
   HostComponent,
   TextComponent,
   FragmentComponent,
-  RecycledComponent
+  RecycledComponent,
+  EmptyComponent
 } from './types'
+
+const emptyElement = createElement([], { key: null })
 
 const isDOMElement = t =>
   typeof t === 'object' && (t instanceof Element || t instanceof HTMLDocument)
 
 export default function createComponent(element, parentComponent) {
-  return new (typeof element.type === 'function'
+  return new (element == null
+    ? EmptyComponent
+    : typeof element.type === 'function'
     ? CompoundComponent
     : typeof element === 'string' || typeof element === 'number'
     ? TextComponent
@@ -19,5 +25,5 @@ export default function createComponent(element, parentComponent) {
     ? FragmentComponent
     : isDOMElement(element.type)
     ? RecycledComponent
-    : HostComponent)(element, parentComponent)
+    : HostComponent)(element || emptyElement, parentComponent)
 }

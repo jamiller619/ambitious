@@ -20,12 +20,9 @@ const setKey = (element, keyValue) => {
 
 const Element = function(type, props, key) {
   const element = {}
-  const displayName =
-    typeof type === 'function' ? type.name : type.displayName || null
 
   Object.defineProperties(element, {
     $$typeof: defineProp(AMBITIOUS_ELEMENT),
-    displayName: defineProp(displayName || null),
     type: defineProp(type),
     props: defineProp(props),
     key: {

@@ -9,7 +9,7 @@ const BaseComponent = {
     this.parent = parent
     this.key = this.element.key
     this.children = element.props
-      ? element.props.children.map(child => createComponent(child, this))
+      ? element.props.children.map(child => {})
       : null
   },
 

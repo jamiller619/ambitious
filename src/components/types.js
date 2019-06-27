@@ -4,6 +4,7 @@ import HostComponentObj from './HostComponent'
 import FragmentComponentObj from './FragmentComponent'
 import TextComponentObj from './TextComponent'
 import RecycledComponentObj from './RecycledComponent'
+import EmptyComponentObj from './EmptyComponent'
 
 const createComponentType = ComponentSubType => {
   function Component(...args) {
@@ -30,3 +31,4 @@ export const HostComponent = createComponentType(HostComponentObj)
 export const TextComponent = createComponentType(TextComponentObj)
 export const FragmentComponent = createComponentType(FragmentComponentObj)
 export const RecycledComponent = createComponentType(RecycledComponentObj)
+export const EmptyComponent = createComponentType(EmptyComponentObj)
