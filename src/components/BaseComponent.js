@@ -22,9 +22,12 @@ const BaseComponent = {
   },
 
   findChildComponentByElement(element) {
-    const index = this.children.findIndex(
-      child => child.element === element || child.element.key === element.key
-    )
+    const index = this.children.findIndex(child => {
+      if (typeof element === 'string' || typeof element === 'number') {
+        return child.text === element
+      }
+      return child.element === element || child.element.key === element.key
+    })
 
     if (index < 0) {
       throw new Error(
@@ -91,7 +94,6 @@ const BaseComponent = {
 
   async updateChild(currentElement, nextElement) {
     const { component } = this.findChildComponentByElement(currentElement)
-
     await component.update(nextElement)
   },
 

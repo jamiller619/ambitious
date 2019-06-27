@@ -7,14 +7,9 @@ const TextComponent = {
     this.text = text
   },
 
-  update(nextComponent) {
-    if (nextComponent.text !== this.text) {
-      return {
-        type: 'textNodeUpdate',
-        action: () =>
-          (this.text = this.node.textContent = this.element =
-            nextComponent.text)
-      }
+  update(nextElement) {
+    if (this.text !== nextElement) {
+      this.text = this.node.textContent = this.element = nextElement
     }
   },
 
