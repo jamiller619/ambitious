@@ -11,7 +11,7 @@ import createComponent from './components/createComponent'
 export const mount = async (element, containerNode) => {
   if (containerNode.firstChild) {
     while (containerNode.firstChild) {
-      containerNode.removeElement(containerNode.firstChild)
+      containerNode.removeChild(containerNode.firstChild)
     }
   }
 
