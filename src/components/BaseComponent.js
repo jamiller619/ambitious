@@ -1,5 +1,5 @@
 import { LIFECYCLE_EVENTS } from '../utils'
-import { dispatchEvents, updateProps, patch, diffChildren } from '../render'
+import { dispatchEvents, updateProps, diffChildren } from '../render'
 import createComponent from './createComponent'
 
 const BaseComponent = {
@@ -50,12 +50,14 @@ const BaseComponent = {
     ) {
       const node = this.getNode()
 
+      // return async () => {
       updateProps(node, currentElement, nextElement)
 
-      return patch(diffChildren(this, currentElement, nextElement))
+      return diffChildren(this, currentElement, nextElement)
+      // }
     }
 
-    return this.parent.replaceChild(nextElement, currentElement)
+    return async () => this.parent.replaceChild(nextElement, currentElement)
   },
 
   async replaceChild(newElement, oldElement) {
@@ -100,11 +102,12 @@ const BaseComponent = {
   async appendChild(newElement) {
     const newChildComponent = createComponent(newElement, this)
     const newChildNode = newChildComponent.render()
+    const node = this.getNode()
 
     await dispatchEvents(LIFECYCLE_EVENTS.BEFORE_MOUNT, newChildComponent)
 
-    this.getNode().appendChild(newChildNode)
     this.children.push(newChildComponent)
+    node.appendChild(newChildNode)
 
     dispatchEvents(LIFECYCLE_EVENTS.MOUNT, newChildComponent)
   },

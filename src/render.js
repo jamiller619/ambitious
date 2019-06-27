@@ -15,34 +15,18 @@ export const mount = async (element, containerNode) => {
     }
   }
 
-  const rootElement = createElement(containerNode)
-  const root = createComponent(rootElement)
+  const root = createComponent(createElement(containerNode))
 
   await root.appendChild(element)
 
   return root
 }
 
-export const patch = diffs => {
-  return new Promise(resolve => {
-    window.requestAnimationFrame(async () => {
-      const operations = flatten(diffs)
-
-      if (operations.length > 0) {
-        await Promise.all(
-          operations.map(async diff =>
-            diff != null && diff.action ? diff.action() : diff()
-          )
-        )
-      }
-
-      resolve()
-    })
-  })
-}
-
-export const diffChildren = (currentComponent, currentElement, nextElement) => {
-  const queue = []
+export const diffChildren = async (
+  currentComponent,
+  currentElement,
+  nextElement
+) => {
   const currentChildren = currentElement.props.children
   const nextChildren = nextElement.props.children
 
@@ -66,25 +50,25 @@ export const diffChildren = (currentComponent, currentElement, nextElement) => {
       const currentChild = currentChildren[i]
 
       if (currentChild) {
-        currentComponent.insertBefore(nextChild, currentChildren[i])
+        await currentComponent.insertBefore(nextChild, currentChildren[i])
       } else {
-        currentComponent.appendChild(nextChild)
+        await currentComponent.appendChild(nextChild)
       }
     } else {
       // We found a match, let the component handle the update
-      currentComponent.updateChild(match, nextChild)
+      await currentComponent.updateChild(match, nextChild)
     }
   }
 
   const remainingChildren = currentChildren.slice(i)
 
   if (remainingChildren.length) {
-    currentChildren.forEach(child => currentComponent.removeChild(child))
+    await Promise.all(
+      currentChildren.map(async child => currentComponent.removeChild(child))
+    )
   }
 
   currentComponent.element = nextElement
-
-  return queue
 }
 
 const reservedPropNames = ['list', 'draggable', 'spellcheck', 'translate']

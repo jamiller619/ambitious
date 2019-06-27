@@ -1,5 +1,5 @@
 import { COMPONENT_TYPES } from '../utils'
-import { patch, diffChildren } from '../render'
+import { diffChildren } from '../render'
 
 const FragmentComponent = {
   $$typeof: COMPONENT_TYPES.FRAGMENT,
@@ -22,9 +22,9 @@ const FragmentComponent = {
     const currentElement = this.element
 
     if (currentElement.key !== nextElement.key) {
-      this.parent.replaceChild(nextElement, currentElement)
+      await this.parent.replaceChild(nextElement, currentElement)
     } else {
-      await patch(diffChildren(this, currentElement, nextElement))
+      await diffChildren(this, currentElement, nextElement)
     }
   },
 

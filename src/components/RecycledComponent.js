@@ -12,11 +12,11 @@ const RecycledComponent = {
   },
 
   getNode() {
-    return this.element.type
+    return (this.node = this.element.type)
   },
 
   render() {
-    return this.element.type
+    return (this.node = this.element.type)
   }
 }
 
