@@ -1,4 +1,8 @@
-import { LIFECYCLE_EVENTS, shouldReplaceComponent } from '../utils'
+import {
+  LIFECYCLE_EVENTS,
+  shouldReplaceComponent,
+  COMPONENT_TYPES
+} from '../utils'
 import { dispatchEvents, updateProps, diffChildren } from '../render'
 import createComponent from './createComponent'
 
@@ -15,12 +19,13 @@ const BaseComponent = {
     this.$$typeof = $$typeof
     this.element = element
     this.parent = parent
+    this.key = element.key
 
-    this.key = element ? element.key : null
-    this.children =
-      element && element.props
+    if (this.$$typeof !== COMPONENT_TYPES.COMPOUND) {
+      this.children = element.props
         ? element.props.children.map(child => createComponent(child, this))
-        : null
+        : []
+    }
   },
 
   getNode() {

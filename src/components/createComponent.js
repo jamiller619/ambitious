@@ -12,9 +12,11 @@ const isDOMElement = t =>
   typeof t === 'object' && (t instanceof Element || t instanceof HTMLDocument)
 
 export default function createComponent(element, parentComponent) {
-  return new (element == null || element === false
-    ? EmptyComponent
-    : typeof element.type === 'function'
+  if (element == null || element === false) {
+    return new EmptyComponent(COMPONENT_TYPES.EMPTY, parentComponent)
+  }
+
+  return new (typeof element.type === 'function'
     ? CompoundComponent
     : typeof element === 'string' || typeof element === 'number'
     ? TextComponent
