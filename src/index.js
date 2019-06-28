@@ -4,10 +4,10 @@ import { COMPONENT_TYPES } from './utils'
 
 const Fragment = COMPONENT_TYPES.FRAGMENT
 
-const app = {
+const ambitious = {
   createElement,
   mount,
   Fragment
 }
 
-export { app as default, Fragment }
+export { ambitious as default, mount, Fragment }

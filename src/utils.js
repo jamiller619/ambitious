@@ -1,10 +1,10 @@
 export const COMPONENT_TYPES = {
-  COMPOUND: 'COMPOUND',
-  HOST: 'HOST',
-  FRAGMENT: 'FRAGMENT',
-  TEXT: 'TEXT',
-  RECYCLED: 'RECYCLED',
-  EMPTY: 'EMPTY'
+  COMPOUND: 'COMPOUND_COMPONENT',
+  HOST: 'HOST_COMPONENT',
+  FRAGMENT: 'FRAGMENT_COMPONENT',
+  TEXT: 'TEXT_COMPONENT',
+  RECYCLED: 'RECYCLED_COMPONENT',
+  EMPTY: 'EMPTY_COMPONENT'
 }
 
 export const LIFECYCLE_EVENTS = {
@@ -30,6 +30,17 @@ export const flatten = arr =>
     (acc, val) => (isArray(val) ? acc.concat(flatten(val)) : acc.concat(val)),
     []
   )
+
+export const generateId = () =>
+  Math.random()
+    .toString(36)
+    .replace('0.', '')
+
+export const UID = generateId()
+
+export const shouldReplaceComponent = (a, b) => {
+  return a.type !== b.type || a.key !== b.key
+}
 
 export const isEqual = (a, b) => {
   if (a == null || b == null) {

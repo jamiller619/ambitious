@@ -1,70 +1,65 @@
-import { COMPONENT_TYPES, LIFECYCLE_EVENTS, freeze, isEqual } from '../utils'
+import {
+  COMPONENT_TYPES,
+  LIFECYCLE_EVENTS,
+  freeze,
+  isEqual,
+  shouldReplaceComponent
+} from '../utils'
 import { dispatchEvents } from '../render'
 import createComponent from './createComponent'
-// import Queue from '../support/Queue'
 
 const CompoundComponent = {
   $$typeof: COMPONENT_TYPES.COMPOUND,
 
   construct(element) {
-    this.displayName = element.type.name
     const state = element.type.defaultState || {}
 
-    this.children = [createComponent(this.renderComponent(state), this)]
+    this.displayName = element.type.name
+    this.instance = createComponent(this.renderComponent(state), this)
+
+    delete this.children
   },
 
   getNode() {
-    return this.children[0].getNode()
+    return this.instance.getNode()
   },
 
   getChildren() {
-    return this.children[0].getChildren()
+    return this.instance.getChildren()
+  },
+
+  async setState(partialState) {
+    return new Promise(resolve => {
+      window.requestAnimationFrame(async () => {
+        const nextState = Object.assign({}, this.state, partialState)
+
+        if (isEqual(nextState, this.state) === false) {
+          const nextElement = this.renderComponent(nextState)
+          await this.instance.update(nextElement)
+        }
+
+        dispatchEvents(LIFECYCLE_EVENTS.UPDATE, this.instance)
+
+        resolve()
+      })
+    })
   },
 
   async update(nextElement) {
     const currentElement = this.element
 
-    if (
-      currentElement.type !== nextElement.type ||
-      currentElement.key !== nextElement.key
-    ) {
-      await this.parent.insertBefore(nextElement, currentElement)
-      return this.parent.removeChild(currentElement)
-      // return this.parent.replaceChild(nextElement, currentElement)
+    if (shouldReplaceComponent(currentElement, nextElement)) {
+      return this.parent.replaceChild(nextElement, currentElement)
     }
 
     this.element = nextElement
-    const nextChildElement = this.renderComponent(this.state)
+    const nextInstanceElement = this.renderComponent(this.state)
 
-    return this.children[0].update(nextChildElement)
-
-    // const newComponent = createComponent(nextElement)
-    // const newChildElement = this.renderComponent(this.state)
-
-    // return this.children[0].update(newChildElement)
+    return this.instance.update(nextInstanceElement)
   },
 
-  async setState(partialState) {
-    // const queue = new Queue()
-
-    const nextState = Object.assign({}, this.state, partialState)
-
-    if (isEqual(nextState, this.state) === false) {
-      const nextElement = this.renderComponent(nextState)
-      // const item = await this.children[0].update(nextElement)
-      await this.children[0].update(nextElement)
-
-      // queue.enqueue(item)
-
-      // queue.enqueue({
-      //   task: 'updateLifecycle',
-      //   action: async () => {
-      dispatchEvents(LIFECYCLE_EVENTS.UPDATE, this.children[0])
-      // }
-      // })
-    }
-
-    // await queue.flush()
+  async replaceChild(nextElement) {
+    return this.parent.replaceChild(nextElement, this.element)
   },
 
   renderComponent(state) {
@@ -75,7 +70,7 @@ const CompoundComponent = {
   },
 
   render() {
-    return this.children[0].render()
+    return this.instance.render()
   }
 }
 

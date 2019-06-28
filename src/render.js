@@ -3,7 +3,8 @@ import {
   isNullOrFalse,
   XLINK_NS,
   isArray,
-  COMPONENT_TYPES
+  COMPONENT_TYPES,
+  UID
 } from './utils'
 import createElement from './createElement'
 import createComponent from './components/createComponent'
@@ -15,11 +16,11 @@ export const mount = async (element, containerNode) => {
     }
   }
 
-  const root = createComponent(createElement(containerNode))
+  const app = createComponent(createElement(containerNode))
 
-  await root.appendChild(element)
+  await app.appendChild(element)
 
-  return root
+  return app
 }
 
 export const diffChildren = async (
@@ -35,7 +36,7 @@ export const diffChildren = async (
 
   for (; i < length; i++) {
     const nextChild = nextChildren[i]
-    const nextKey = nextChild.key || i
+    const nextKey = nextChild.key
 
     // Find the cooresponding element in the current set of children
     const match = currentChildren.find((child, n) =>
@@ -68,7 +69,7 @@ export const diffChildren = async (
     )
   }
 
-  currentComponent.element = nextElement
+  // currentComponent.element = nextElement
 }
 
 const reservedPropNames = ['list', 'draggable', 'spellcheck', 'translate']
@@ -194,12 +195,7 @@ const createCSSValueIterator = value => {
   return flatten(classList)
 }
 
-const generateId = () =>
-  Math.random()
-    .toString(36)
-    .replace('0.', '')
-
-const eventsKey = `$$events__${generateId()}`
+const eventsKey = `$$events__${UID}`
 const eventProxy = event => {
   return event.currentTarget[eventsKey][event.type](event)
 }

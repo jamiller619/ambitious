@@ -1,4 +1,4 @@
-import { COMPONENT_TYPES } from '../utils'
+import { COMPONENT_TYPES, shouldReplaceComponent } from '../utils'
 import { diffChildren } from '../render'
 
 const FragmentComponent = {
@@ -21,19 +21,19 @@ const FragmentComponent = {
   async update(nextElement) {
     const currentElement = this.element
 
-    if (currentElement.key !== nextElement.key) {
-      await this.parent.replaceChild(nextElement, currentElement)
-    } else {
-      await diffChildren(this, currentElement, nextElement)
+    if (shouldReplaceComponent(currentElement, nextElement)) {
+      return this.parent.replaceChild(nextElement, currentElement)
     }
+
+    this.element = nextElement
+
+    return diffChildren(this, currentElement, nextElement)
   },
 
   render() {
     const fragment = document.createDocumentFragment()
 
-    this.children.forEach(child => {
-      fragment.appendChild(child.render())
-    })
+    fragment.append(...this.children.map(child => child.render()))
 
     return fragment
   }
