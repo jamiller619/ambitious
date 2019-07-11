@@ -11,6 +11,8 @@ const TextComponent = {
     if (this.text !== nextElement) {
       this.text = this.node.textContent = this.element = nextElement
     }
+
+    return this
   },
 
   render() {

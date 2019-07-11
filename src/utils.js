@@ -31,14 +31,45 @@ export const flatten = arr =>
     []
   )
 
-export const generateId = () =>
-  Math.random()
+const seedCache = {}
+
+export const generateId = seed => {
+  if (seed != null && seedCache[seed]) {
+    return seedCache[seed]
+  }
+
+  const id = Math.random()
     .toString(36)
     .replace('0.', '')
 
+  if (seed != null) {
+    seedCache[seed] = id
+  }
+
+  return id
+}
+
+export const generateKey = index => `$$__ambitious${generateId(index)}`
+
+export const getIndexFromKey = key => {
+  if (key == null) {
+    return null
+  }
+
+  const id = key.replace('$$__ambitious', '')
+
+  for (const index in seedCache) {
+    if (seedCache[index] === id) {
+      return Number(index)
+    }
+  }
+
+  return null
+}
+
 export const UID = generateId()
 
-export const shouldReplaceComponent = (a, b) => {
+export const shouldReplaceElement = (a, b) => {
   return a.type !== b.type || a.key !== b.key
 }
 

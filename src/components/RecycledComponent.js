@@ -11,10 +11,6 @@ const RecycledComponent = {
     )
   },
 
-  getNode() {
-    return (this.node = this.element.type)
-  },
-
   render() {
     return (this.node = this.element.type)
   }

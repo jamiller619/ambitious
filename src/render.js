@@ -4,72 +4,219 @@ import {
   XLINK_NS,
   isArray,
   COMPONENT_TYPES,
-  UID
+  UID,
+  shouldReplaceElement
 } from './utils'
-import createElement from './createElement'
 import createComponent from './components/createComponent'
+import createElement from './createElement'
+
+// export const mount = async (element, containerNode) => {
+//   if (containerNode.firstChild) {
+//     while (containerNode.firstChild) {
+//       containerNode.removeChild(containerNode.firstChild)
+//     }
+//   }
+
+//   const app = createComponent(createElement(containerNode))
+
+//   await app.appendChild(element)
+
+//   return app
+// }
+const ROOT_KEY = `$$__ambitiousRoot${UID}`
 
 export const mount = async (element, containerNode) => {
-  if (containerNode.firstChild) {
-    while (containerNode.firstChild) {
-      containerNode.removeChild(containerNode.firstChild)
-    }
+  const prevComponent = containerNode[ROOT_KEY]
+
+  if (prevComponent) {
+    return update(prevComponent, element)
+  } else {
+    const rootComponent = createComponent(createElement(containerNode))
+
+    Object.defineProperty(containerNode, ROOT_KEY, {
+      value: rootComponent
+    })
+
+    rootComponent.render()
+
+    return appendComponent(element, rootComponent)
+    // containerNode.appendChild(childComponent.getNode())
   }
+  // if (containerNode.firstChild) {
+  //   const rootNode = containerNode
+  //   const rootComponent = rootNode[ROOT_KEY]
 
-  const app = createComponent(createElement(containerNode))
+  //   if (rootComponent) {
+  //     await rootComponent.update(element)
+  //   } else {
+  //     while (containerNode.firstChild) {
+  //       containerNode.removeChild(containerNode.firstChild)
+  //     }
 
-  await app.appendChild(element)
+  //     const component = createComponent(element)
+  //     const node = component.render()
 
-  return app
+  //     Object.defineProperty(node, ROOT_KEY, {
+  //       value: component
+  //     })
+
+  //     containerNode.appendComponent(node)
+  //   }
+  // }
 }
 
-export const diffChildren = async (
-  currentComponent,
-  currentElement,
-  nextElement
-) => {
-  const currentChildren = currentElement.props.children
-  const nextChildren = nextElement.props.children
+const logComponent = component => {
+  return component
+  // component.displayName || `${component.$$typeof}:${component.element.type}`
+}
 
-  let i = 0,
-    length = nextChildren.length
+const logElement = element => {
+  return typeof element.type === 'function' ? element.type.name : element.type
+}
 
-  for (; i < length; i++) {
-    const nextChild = nextChildren[i]
-    const nextKey = nextChild.key
+export const update = async (currentComponent, nextElement) => {
+  // If we're updating another component with "EMPTY",
+  // we're really deleting it
+  if (nextElement.type === COMPONENT_TYPES.EMPTY) {
+    if (currentComponent.type !== COMPONENT_TYPES.EMPTY) {
+      return currentComponent.replaceWith(nextElement)
+    }
 
-    // Find the cooresponding element in the current set of children
-    const match = currentChildren.find((child, n) =>
-      child.key ? child.key === nextKey : i === n
+    currentComponent.element = nextElement
+
+    return currentComponent
+  }
+
+  const currentNode = currentComponent.getNode()
+  const currentElement = currentComponent.element
+
+  if (shouldReplaceElement(currentElement, nextElement)) {
+    return replaceComponent(nextElement, currentComponent)
+  } else {
+    updateProps(
+      currentNode,
+      currentElement,
+      nextElement,
+      currentComponent.isSvg
     )
 
-    // If no match was found, this is a new node
-    if (!match) {
-      // If a current child exists at the current index,
-      // insert the new child immediately before that node
-      // If there is no current child, append it
-      const currentChild = currentChildren[i]
+    return patchChildren(currentComponent, nextElement)
+  }
+}
 
-      if (currentChild) {
-        await currentComponent.insertBefore(nextChild, currentChildren[i])
-      } else {
-        await currentComponent.appendChild(nextChild)
-      }
+// export const updateComponent = async (component, prevElement) => {
+//   updateProps(
+//     component.getNode(),
+//     prevElement,
+//     component.element,
+//     component.isSvg
+//   )
+
+//   return patchChildren()
+// }
+
+export const insertBefore = async (newElement, childReferenceComponent) => {
+  console.log(
+    `inserting ${logElement(newElement)} before ${logComponent(
+      childReferenceComponent
+    )}`
+  )
+  const referenceNode = childReferenceComponent.getNode()
+  const parentNode = referenceNode.parentNode
+  const newComponent = createComponent(newElement)
+  const newNode = newComponent.render()
+
+  // Append the child if parent doesn't have any children
+  if (parentNode.childElementCount === 0) {
+    parentNode.appendChild(newNode)
+  } else {
+    parentNode.insertBefore(newNode, referenceNode)
+  }
+
+  return newComponent
+}
+
+export const appendComponent = async (newElement, parentComponent) => {
+  console.dir(
+    `appending ${logElement(newElement)} to ${logComponent(parentComponent)}`
+  )
+  const parentNode = parentComponent.getNode()
+  const newComponent = createComponent(newElement, parentComponent)
+  const newNode = newComponent.render()
+
+  parentNode.appendChild(newNode)
+
+  return newComponent
+}
+
+export const removeComponent = async childComponent => {
+  console.log(`removing ${logComponent(childComponent)}`)
+  const childNode = childComponent.getNode()
+  const parentNode = childNode.parentNode
+
+  parentNode.removeChild(childNode)
+
+  return childNode
+}
+
+export const replaceComponent = async (nextElement, prevComponent) => {
+  console.log(
+    `replacing ${logComponent(prevComponent)} with ${logElement(nextElement)}`
+  )
+  const nextComponent = createComponent(nextElement, prevComponent.parent)
+  const nextNode = nextComponent.render()
+  const prevNode = prevComponent.getNode()
+  // const containerNode = prevNode.parentNode
+
+  // containerNode.replaceChild(nextNode, prevNode)
+  prevNode.replaceWith(nextNode)
+
+  return nextComponent
+}
+
+export const patchChildren = async (currentComponent, nextElement) => {
+  const currentChildComponents = currentComponent.getChildren()
+
+  if (nextElement.type === COMPONENT_TYPES.EMPTY) {
+    return
+  }
+
+  const nextElementChildren = nextElement.props.children
+
+  let i = 0,
+    length = nextElementChildren.length
+
+  for (; i < length; i++) {
+    const nextElementChild = nextElementChildren[i]
+
+    const currentChildComponentMatch = currentChildComponents
+      .slice(i)
+      .find(
+        child =>
+          child.key === nextElementChild.key &&
+          child.element.type === nextElementChild.type
+      )
+
+    if (currentChildComponentMatch) {
+      currentChildComponentMatch.update(nextElementChild)
     } else {
-      // We found a match, let the component handle the update
-      await currentComponent.updateChild(match, nextChild)
+      const currentChildComponent = currentChildComponents[i]
+
+      if (currentChildComponent) {
+        currentChildComponent.insertBefore(nextElementChild)
+      } else {
+        appendComponent(nextElementChild, currentComponent)
+      }
     }
   }
 
-  const remainingChildren = currentChildren.slice(i)
-
-  if (remainingChildren.length) {
-    await Promise.all(
-      currentChildren.map(async child => currentComponent.removeChild(child))
-    )
+  if (currentChildComponents.length > i) {
+    await currentChildComponents[i].pop().remove()
   }
 
-  // currentComponent.element = nextElement
+  currentComponent.element = nextElement
+
+  return currentComponent
 }
 
 const reservedPropNames = ['list', 'draggable', 'spellcheck', 'translate']

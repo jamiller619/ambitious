@@ -16,7 +16,7 @@ const HostComponent = {
 
     updateProps(node, null, element, this.isSvg)
 
-    node.append(...this.children.map(child => child.render(this.isSvg)))
+    node.append(...this.renderChildren().map(child => child.render(this.isSvg)))
 
     return (this.node = node)
   }

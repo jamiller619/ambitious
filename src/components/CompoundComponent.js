@@ -3,14 +3,14 @@ import {
   LIFECYCLE_EVENTS,
   freeze,
   isEqual,
-  shouldReplaceComponent
+  shouldReplaceElement
 } from '../utils'
-import { dispatchEvents } from '../render'
+import { dispatchEvents, replaceComponent } from '../render'
 import createComponent from './createComponent'
 
 const validateState = state => {
   if (typeof state !== 'object') {
-    return Error(
+    throw new Error(
       `Component state must be of type "object" but instead received "${typeof state}" with a value of "${state}".`
     )
   }
@@ -22,10 +22,7 @@ const CompoundComponent = {
   $$typeof: COMPONENT_TYPES.COMPOUND,
 
   construct(element) {
-    const state = validateState(element.type.defaultState) || {}
-
     this.displayName = element.type.name
-    this.instance = createComponent(this.renderComponent(state), this)
   },
 
   getNode() {
@@ -46,7 +43,7 @@ const CompoundComponent = {
         )
 
         if (isEqual(nextState, this.state) === false) {
-          const nextElement = this.renderComponent(nextState)
+          const nextElement = this.renderInstance(nextState)
           await this.instance.update(nextElement)
         }
 
@@ -54,27 +51,54 @@ const CompoundComponent = {
       })
     })
 
-    dispatchEvents(LIFECYCLE_EVENTS.UPDATE, this.instance)
+    // dispatchEvents(LIFECYCLE_EVENTS.UPDATE, this.instance)
   },
 
   async update(nextElement) {
     const currentElement = this.element
 
-    if (shouldReplaceComponent(currentElement, nextElement)) {
-      return this.parent.replaceChild(nextElement, currentElement)
+    if (shouldReplaceElement(currentElement, nextElement)) {
+      // return this.replaceWith(nextElement)
+      return this.parent.replaceChild(nextElement, this)
     }
 
-    this.element = nextElement
-    const nextInstanceElement = this.renderComponent(this.state)
+    const nextInstanceElement = this.renderInstance(this.state)
 
     return this.instance.update(nextInstanceElement)
   },
 
-  async replaceChild(nextElement) {
-    return this.parent.replaceChild(nextElement, this.element)
+  async replaceChild(nextElement, currentChildComponent) {
+    const newChildComponent = await replaceComponent(
+      nextElement,
+      currentChildComponent
+    )
+
+    this.instance = newChildComponent
+
+    return newChildComponent
   },
 
-  renderComponent(state) {
+  // async replaceChild(nextElement) {
+  //   return this.parent.replaceChild(nextElement, this.element)
+  // },
+
+  // async appendChild(element) {
+  //   return this.parent.appendChild(element)
+  // },
+
+  // async removeChild(element) {
+  //   return this.parent.removeChild(element)
+  // },
+
+  // async updateChild(...args) {
+  //   return this.parent.updateChild(...args)
+  // },
+
+  // async insertBefore(...args) {
+  //   return this.parent.insertBefore(...args)
+  // },
+
+  renderInstance(state) {
     this.state = freeze(validateState(state))
     const { element, setState } = this
 
@@ -82,6 +106,9 @@ const CompoundComponent = {
   },
 
   render() {
+    const state = validateState(this.element.type.defaultState || {})
+    this.instance = createComponent(this.renderInstance(state), this)
+
     return this.instance.render()
   }
 }
