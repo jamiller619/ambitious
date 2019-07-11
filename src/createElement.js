@@ -31,7 +31,7 @@ const createElement = (key, type, props) => {
   } else {
     return Object.freeze({
       $$typeof: T.ELEMENT,
-      key: key || generateKey(0),
+      key: key,
       type: type,
       props: props
     })

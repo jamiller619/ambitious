@@ -184,5 +184,7 @@ export const mount = (element, node) => {
     }
   }
 
+  console.log(element)
+
   node.appendChild(renderElement(element))
 }

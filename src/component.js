@@ -8,10 +8,6 @@ import {
 import { renderElement, updateProps } from './render'
 
 const areElementsEqual = (a, b) => {
-  // const aEl = getElement(a)
-  // const bEl = getElement(b)
-
-  // return aEl.key === bEl.key && aEl.type === bEl.type
   return a.key === b.key && a.type === b.type
 }
 
@@ -69,7 +65,8 @@ const patch = (
   isSvg = node.nodeName === 'svg'
 ) => {
   if (!areElementsEqual(prevElement, nextElement)) {
-    node.parentNode.replaceChild(renderElement(nextElement), node)
+    node.parentNode.insertBefore(renderElement(nextElement), node)
+    node.parentNode.removeChild(node)
   } else {
     updateProps(node, prevElement, nextElement, isSvg)
     updateChildren(node, prevElement, nextElement, isSvg)
