@@ -1,12 +1,9 @@
-import createElement from './createElement'
+import { h } from './createElement'
 import { mount } from './render'
-import { COMPONENT_TYPES } from './utils'
-
-const Fragment = COMPONENT_TYPES.FRAGMENT
+import { Fragment } from './utils'
 
 const ambitious = {
-  createElement,
-  mount,
+  h,
   Fragment
 }
 

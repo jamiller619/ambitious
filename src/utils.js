@@ -1,102 +1,78 @@
-export const COMPONENT_TYPES = {
-  COMPOUND: 'COMPOUND_COMPONENT',
-  HOST: 'HOST_COMPONENT',
-  FRAGMENT: 'FRAGMENT_COMPONENT',
-  TEXT: 'TEXT_COMPONENT',
-  RECYCLED: 'RECYCLED_COMPONENT',
-  EMPTY: 'EMPTY_COMPONENT'
+export const T = {
+  ELEMENT: Symbol('ambitious.element'),
+  COMPONENT: Symbol('ambitious.component'),
+  FRAGMENT: Symbol('ambitious.fragment')
 }
 
-export const LIFECYCLE_EVENTS = {
-  MOUNT: 'mount',
-  BEFORE_MOUNT: 'beforemount',
-  UNMOUNT: 'unmount',
-  BEFORE_UNMOUNT: 'beforeunmount',
-  UPDATE: 'update'
+export const EVENTS = {
+  ATTACH: 'attach',
+  BEFORE_ATTACH: 'beforeattach',
+  DETACH: 'detach',
+  BEFORE_DETACH: 'beforedetach',
+  CATCH: 'catch',
+  RENDER: 'render'
 }
 
-export const SVG_NS = 'http://www.w3.org/2000/svg'
-export const XLINK_NS = 'http://www.w3.org/1999/xlink'
+export const Fragment = T.FRAGMENT
+
+// simple random id generator
+const generateId = () =>
+  Math.random()
+    .toString(36)
+    .replace('0.', '')
+
+export const eventsKey = `$$events__${generateId()}`
 
 export const isArray = Array.isArray
-export const isNullOrFalse = t =>
-  t == null || t === false || t === 'false' || t === 0
-export const isHTML = t =>
-  typeof t === 'object' && (t instanceof Element || t instanceof HTMLDocument)
-
-export const freeze = v => (Object.freeze ? Object.freeze(v) : v)
 export const flatten = arr =>
   arr.reduce(
     (acc, val) => (isArray(val) ? acc.concat(flatten(val)) : acc.concat(val)),
     []
   )
+export const isElementTextNode = element =>
+  typeof element === 'string' || typeof element === 'number'
 
-const seedCache = {}
+export const isComponent = element => element.$$typeof === T.COMPONENT
 
-export const generateId = seed => {
-  if (seed != null && seedCache[seed]) {
-    return seedCache[seed]
+export const getElement = element => {
+  if (isComponent(element)) {
+    return getElement(element.renderedElement)
   }
 
-  const id = Math.random()
-    .toString(36)
-    .replace('0.', '')
-
-  if (seed != null) {
-    seedCache[seed] = id
-  }
-
-  return id
+  return element
 }
 
-export const generateKey = index => `$$__ambitious${generateId(index)}`
+export const getChildren = element => getProps(element).children
 
-export const getIndexFromKey = key => {
-  if (key == null) {
-    return null
+export const getProps = element => {
+  if (isComponent(element)) {
+    return getProps(element.renderedElement)
   }
 
-  const id = key.replace('$$__ambitious', '')
-
-  for (const index in seedCache) {
-    if (seedCache[index] === id) {
-      return Number(index)
-    }
-  }
-
-  return null
+  return element.props
 }
 
-export const UID = generateId()
+// const dispatchEvent = async (type, node) => {
+//   await Promise.all(
+//     [...node.childNodes].map(childNode => dispatchEvent(type, childNode))
+//   )
 
-export const shouldReplaceElement = (a, b) => {
-  return a.type !== b.type || a.key !== b.key
-}
+//   const eventHandler = node[eventsKey] && node[eventsKey][type]
 
-export const isEqual = (a, b) => {
-  if (a == null || b == null) {
-    return false
-  }
+//   if (eventHandler) {
+//     return eventHandler(node)
+//   }
+// }
 
-  if (a == b) {
-    return true
-  }
+// export const dispatchEvents = async (type, element) => {
+//   if (!isComponent(element)) return
 
-  const aprops = Object.getOwnPropertyNames(a)
-  const bprops = Object.getOwnPropertyNames(b)
-  const l = aprops.length
+//   return dispatchEvent(type, element.node)
+// }
 
-  if (l !== bprops.length) {
-    return false
-  }
-
-  for (let i = 0; i < l; i++) {
-    const name = aprops[i]
-
-    if (a[name] !== b[name]) {
-      return false
-    }
-  }
-
-  return true
-}
+// export const attach = async (element, node) => {
+//   const renderedNode = renderElement(element)
+//   await dispatchEvents(EVENTS.BEFORE_ATTACH, element)
+//   node.appendChild(renderedNode)
+//   dispatchEvents(EVENTS.ATTACH, element)
+// }

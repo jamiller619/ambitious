@@ -1,40 +1,53 @@
-import { freeze, flatten, generateKey, COMPONENT_TYPES } from './utils'
+import { T, flatten, isElementTextNode } from './utils'
+import Component from './component'
 
-const AMBITIOUS_ELEMENT = Symbol('ambitious.element')
-
-const defineProp = v => ({ value: v })
-
-const Element = function(type, props, key) {
-  const element = {}
-
-  Object.defineProperties(element, {
-    $$typeof: defineProp(AMBITIOUS_ELEMENT),
-    type: defineProp(type || COMPONENT_TYPES.EMPTY),
-    props: defineProp(props),
-    key: defineProp(key)
-  })
-
-  return freeze(element)
+const generateKey = i => {
+  return `$$_ambitious_${i}`
 }
 
-export default function createElement(type, config, ...children) {
-  if (
-    typeof type === 'object' &&
-    type != null &&
-    type.$$typeof === AMBITIOUS_ELEMENT
-  ) {
-    return type
+const createChildElement = (element, index) => {
+  if (isElementTextNode(element)) {
+    return element
   }
 
-  const { key, ...props } = config || {}
-
-  props.children = flatten(children).map((el, i) => {
-    if (typeof el === 'string' || typeof el === 'number' || el.key != null) {
-      return el
+  if (element.$$typeof === T.COMPONENT) {
+    if (!element.key) {
+      element.key = generateKey(index)
     }
 
-    return Element(el.type, el.props, generateKey(i))
-  })
+    return element
+  }
 
-  return Element(type, props || {}, key)
+  return createElement(
+    element.key || generateKey(index),
+    element.type,
+    element.props
+  )
+}
+
+const createElement = (key, type, props) => {
+  if (typeof type === 'function') {
+    return new Component(key, type, props)
+  } else {
+    return Object.freeze({
+      $$typeof: T.ELEMENT,
+      key: key || generateKey(0),
+      type: type,
+      props: props
+    })
+  }
+}
+
+export const h = (type, config, ...children) => {
+  const { key, ...props } = config || {}
+
+  props.children = []
+
+  if (children.length > 0) {
+    props.children = flatten(children)
+      .filter(child => child != null && child !== false)
+      .map((child, i) => createChildElement(child, i))
+  }
+
+  return createElement(key, type, props)
 }

@@ -20,12 +20,11 @@ export default {
       browser: true
     }),
     babel({
-      // runtimeHelpers: true,
       exclude: 'node_modules/**'
     }),
     commonjs(),
     cleanup(),
-    minify(),
+    // minify(),
     filesize()
   ]
 }
