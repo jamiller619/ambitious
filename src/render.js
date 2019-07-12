@@ -134,6 +134,8 @@ const createCSSValueIterator = value => {
 }
 
 export const updateProps = (node, oldElement, newElement, isSvg) => {
+  isSvg = isSvg || newElement.type === 'svg'
+
   const merged = Object.assign(
     {},
     getProps(oldElement || {}),
@@ -156,23 +158,22 @@ export const renderElement = (element, isSvg) => {
 
   isSvg = isSvg || el.type === 'svg'
 
-  const node =
-    el.type === T.FRAGMENT
-      ? document.createDocumentFragment()
-      : updateProps(
-          isSvg
-            ? document.createElementNS(SVG_NS, el.type)
-            : document.createElement(el.type),
-          null,
-          el,
-          isSvg
-        )
+  const node = updateProps(
+    isSvg
+      ? document.createElementNS(SVG_NS, el.type)
+      : document.createElement(el.type),
+    null,
+    el,
+    isSvg
+  )
+
+  node.append(...getChildren(element).map(child => renderElement(child, isSvg)))
 
   if (isComponent(element)) {
     element.node = node
-  }
 
-  node.append(...getChildren(element).map(child => renderElement(child, isSvg)))
+    element.work()
+  }
 
   return node
 }
@@ -184,7 +185,7 @@ export const mount = (element, node) => {
     }
   }
 
-  console.log(element)
-
   node.appendChild(renderElement(element))
+
+  return element
 }

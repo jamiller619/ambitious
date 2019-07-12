@@ -13,7 +13,7 @@ export const EVENTS = {
   RENDER: 'render'
 }
 
-export const Fragment = T.FRAGMENT
+// export const Fragment = T.FRAGMENT
 
 // simple random id generator
 const generateId = () =>

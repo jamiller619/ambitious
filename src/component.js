@@ -20,11 +20,13 @@ const updateChildren = (node, prevElement, nextElement, isSvg) => {
 
   for (; i < l; i += 1) {
     const nextChild = nextChildren[i]
-    const prevChildMatch = prevChildren.find(child =>
+    const prevChildMatchIndex = prevChildren.findIndex(child =>
       areElementsEqual(child, nextChild)
     )
 
-    if (prevChildMatch) {
+    if (prevChildMatchIndex > -1) {
+      const prevChildMatch = prevChildren[prevChildMatchIndex]
+
       if (isElementTextNode(prevChildMatch)) {
         if (isElementTextNode(nextChild)) {
           if (prevChildMatch !== nextChild) {
@@ -34,21 +36,31 @@ const updateChildren = (node, prevElement, nextElement, isSvg) => {
           node.replaceChild(renderElement(nextChild, isSvg), node.firstChild)
         }
       } else {
-        patch(node.childNodes[i], prevChildMatch, nextChild, isSvg)
+        patch(
+          node.childNodes[prevChildMatchIndex],
+          prevChildMatch,
+          nextChild,
+          isSvg
+        )
       }
     } else {
       const prevChild = prevChildren[i]
-      const nextChildMatch = nextChildren
-        .slice(i)
-        .find(child => areElementsEqual(child, prevChild))
 
-      if (nextChildMatch) {
-        node.insertBefore(
-          renderElement(nextChildMatch, isSvg),
-          node.childNodes[i]
-        )
+      if (prevChild) {
+        const nextChildMatch = nextChildren
+          .slice(i)
+          .find(child => areElementsEqual(child, prevChild))
+
+        if (nextChildMatch) {
+          node.insertBefore(
+            renderElement(nextChildMatch, isSvg),
+            node.childNodes[i]
+          )
+        } else {
+          patch(node.childNodes[i], prevChild, nextChild, isSvg)
+        }
       } else {
-        patch(node.childNodes[i], prevChild, nextChild, isSvg)
+        node.appendChild(renderElement(nextChild, isSvg))
       }
     }
   }
@@ -85,6 +97,7 @@ export default function Component(key, type, props) {
   this.render = type
   this.props = props
   this.state = type.defaultState || {}
+  this.queue = []
 
   this.renderedElement = this.renderElement(this.state)
 }
@@ -94,13 +107,30 @@ Component.prototype.renderElement = function(state) {
 }
 
 Component.prototype.setState = function(partialNextState) {
-  const nextState = Object.assign({}, this.state, partialNextState)
+  this.queue.push(partialNextState)
 
-  if (nextState !== this.state) {
-    Object.assign(this.state, nextState)
-    const prevElement = this.renderedElement
-    const nextElement = this.renderElement(this.state)
+  return this.work()
+}
 
-    this.renderedElement = patch(this.node, prevElement, nextElement)
+Component.prototype.work = async function() {
+  if (this.node) {
+    while (this.queue.length) {
+      const partialNextState = this.queue.shift()
+
+      const nextState = Object.assign({}, this.state, partialNextState)
+
+      if (nextState !== this.state) {
+        const element = getElement(this)
+
+        Object.assign(this.state, nextState)
+        const prevElement = this.renderedElement
+        const nextElement = this.renderElement(
+          this.state,
+          element.type === 'svg'
+        )
+
+        this.renderedElement = patch(this.node, prevElement, nextElement)
+      }
+    }
   }
 }

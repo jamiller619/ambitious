@@ -39,6 +39,13 @@ const createElement = (key, type, props) => {
 }
 
 export const h = (type, config, ...children) => {
+  if (
+    (typeof type === 'object' && type.$$typeof === T.COMPONENT) ||
+    type.$$typeof === T.ELEMENT
+  ) {
+    return type
+  }
+
   const { key, ...props } = config || {}
 
   props.children = []
