@@ -112,7 +112,7 @@ Component.prototype.setState = function(partialNextState) {
   return this.work()
 }
 
-Component.prototype.work = async function() {
+Component.prototype.work = function() {
   if (this.node) {
     while (this.queue.length) {
       const partialNextState = this.queue.shift()
