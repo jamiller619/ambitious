@@ -2,7 +2,7 @@ import {
   T,
   isArray,
   flatten,
-  isElementTextNode,
+  ieTextElement,
   isComponent,
   eventsKey,
   getProps,
@@ -150,7 +150,7 @@ export const updateProps = (node, oldElement, newElement, isSvg) => {
 }
 
 export const renderElement = (element, isSvg) => {
-  if (isElementTextNode(element)) {
+  if (ieTextElement(element)) {
     return document.createTextNode(element)
   }
 
@@ -170,9 +170,7 @@ export const renderElement = (element, isSvg) => {
   node.append(...getChildren(element).map(child => renderElement(child, isSvg)))
 
   if (isComponent(element)) {
-    element.node = node
-
-    element.work()
+    element.setNode(node)
   }
 
   return node

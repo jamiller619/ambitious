@@ -1,4 +1,4 @@
-import { T, flatten, isElementTextNode } from './utils'
+import { T, flatten, ieTextElement, freeze } from './utils'
 import Component from './component'
 
 const generateKey = i => {
@@ -6,7 +6,7 @@ const generateKey = i => {
 }
 
 const createChildElement = (element, index) => {
-  if (isElementTextNode(element)) {
+  if (ieTextElement(element)) {
     return element
   }
 
@@ -29,7 +29,7 @@ const createElement = (key, type, props) => {
   if (typeof type === 'function') {
     return new Component(key, type, props)
   } else {
-    return Object.freeze({
+    return freeze({
       $$typeof: T.ELEMENT,
       key: key,
       type: type,

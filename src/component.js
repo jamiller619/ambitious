@@ -1,9 +1,10 @@
 import {
   T,
-  isElementTextNode,
+  ieTextElement,
   isComponent,
   getChildren,
-  getElement
+  getElement,
+  freeze
 } from './utils'
 import { renderElement, updateProps } from './render'
 
@@ -27,8 +28,8 @@ const updateChildren = (node, prevElement, nextElement, isSvg) => {
     if (prevChildMatchIndex > -1) {
       const prevChildMatch = prevChildren[prevChildMatchIndex]
 
-      if (isElementTextNode(prevChildMatch)) {
-        if (isElementTextNode(nextChild)) {
+      if (ieTextElement(prevChildMatch)) {
+        if (ieTextElement(nextChild)) {
           if (prevChildMatch !== nextChild) {
             node.textContent = nextChild
           }
@@ -94,43 +95,38 @@ const patch = (
 export default function Component(key, type, props) {
   this.$$typeof = T.COMPONENT
   this.key = key
-  this.render = type
-  this.props = props
-  this.state = type.defaultState || {}
-  this.queue = []
+  this.render = freeze(type)
+  this.props = freeze(props)
+  this.node = null
+  this.state = freeze(type.defaultState || {})
 
   this.renderedElement = this.renderElement(this.state)
 }
 
+Component.prototype.setNode = function(node) {
+  this.node = node
+
+  if (isComponent(this.renderedElement)) {
+    this.renderedElement.setNode(node)
+  }
+
+  return this
+}
+
 Component.prototype.renderElement = function(state) {
-  return Object.freeze(this.render(this.props, state, this.setState.bind(this)))
+  return this.render(this.props, state, this.setState.bind(this))
 }
 
 Component.prototype.setState = function(partialNextState) {
-  this.queue.push(partialNextState)
+  const nextState = Object.assign({}, this.state, partialNextState)
 
-  return this.work()
-}
+  if (nextState !== this.state) {
+    this.state = freeze(nextState)
 
-Component.prototype.work = function() {
-  if (this.node) {
-    while (this.queue.length) {
-      const partialNextState = this.queue.shift()
+    const element = getElement(this)
+    const prevElement = this.renderedElement
+    const nextElement = this.renderElement(this.state, element.type === 'svg')
 
-      const nextState = Object.assign({}, this.state, partialNextState)
-
-      if (nextState !== this.state) {
-        const element = getElement(this)
-
-        Object.assign(this.state, nextState)
-        const prevElement = this.renderedElement
-        const nextElement = this.renderElement(
-          this.state,
-          element.type === 'svg'
-        )
-
-        this.renderedElement = patch(this.node, prevElement, nextElement)
-      }
-    }
+    this.renderedElement = patch(this.node, prevElement, nextElement)
   }
 }
