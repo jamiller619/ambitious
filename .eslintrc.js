@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 const OFF = 0
 const WARN = 1
@@ -24,6 +24,6 @@ module.exports = {
   },
 
   rules: {
-    "no-return-await": "error"
+    'no-unused-vars': ['error', { ignoreRestSiblings: true }]
   }
 }

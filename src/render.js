@@ -123,10 +123,20 @@ const createCSSValueIterator = value => {
   return flatten(classList)
 }
 
+const getProps = element => {
+  if (element != null) {
+    const { children, ...props } = element.props
+
+    return props
+  }
+
+  return {}
+}
+
 export const updateProps = (node, oldElement, newElement, isSvg) => {
   isSvg = isSvg || newElement.type === 'svg'
 
-  const merged = Object.assign({}, (oldElement || {}).props, newElement.props)
+  const merged = Object.assign({}, getProps(oldElement), getProps(newElement))
 
   for (const attribute in merged) {
     updateProp(node, attribute, merged[attribute], isSvg)

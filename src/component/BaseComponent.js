@@ -5,16 +5,6 @@ function BaseComponent($$typeof, element) {
   this.element = freeze(element)
 }
 
-BaseComponent.prototype.toJSON = function() {
-  const json = {}
-
-  for (const prop in this) {
-    json[prop] = JSON.stringify(this[prop])
-  }
-
-  return json
-}
-
 export const inherit = ComponentBodyDefinition => {
   const { $$typeof, ...ComponentBody } = ComponentBodyDefinition
 
