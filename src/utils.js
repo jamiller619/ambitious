@@ -13,8 +13,6 @@ export const EVENTS = {
   RENDER: 'render'
 }
 
-// export const Fragment = T.FRAGMENT
-
 // simple random id generator
 const generateId = () =>
   Math.random()
@@ -36,28 +34,3 @@ export const isTextElement = element =>
 export const areElementsEqual = (a, b) => {
   return a.key === b.key && a.type === b.type
 }
-
-// const dispatchEvent = async (type, node) => {
-//   await Promise.all(
-//     [...node.childNodes].map(childNode => dispatchEvent(type, childNode))
-//   )
-
-//   const eventHandler = node[eventsKey] && node[eventsKey][type]
-
-//   if (eventHandler) {
-//     return eventHandler(node)
-//   }
-// }
-
-// export const dispatchEvents = async (type, element) => {
-//   if (!isComponent(element)) return
-
-//   return dispatchEvent(type, element.node)
-// }
-
-// export const attach = async (element, node) => {
-//   const renderedNode = renderElement(element)
-//   await dispatchEvents(EVENTS.BEFORE_ATTACH, element)
-//   node.appendChild(renderedNode)
-//   dispatchEvents(EVENTS.ATTACH, element)
-// }
