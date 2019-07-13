@@ -1,8 +1,8 @@
-import { h } from './createElement'
+import createElement from './createElement'
 import { mount } from './render'
 
 const ambitious = {
-  h
+  createElement
 }
 
 export { ambitious as default, mount }

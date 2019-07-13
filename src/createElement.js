@@ -1,12 +1,19 @@
-import { T, flatten, ieTextElement, freeze } from './utils'
-import Component from './component'
+import { T, flatten, isTextElement, freeze } from './utils'
 
 const generateKey = i => {
   return `$$_ambitious_${i}`
 }
 
+const Element = (key, type, props) =>
+  freeze({
+    $$typeof: T.ELEMENT,
+    key: key,
+    type: type,
+    props: props
+  })
+
 const createChildElement = (element, index) => {
-  if (ieTextElement(element)) {
+  if (isTextElement(element)) {
     return element
   }
 
@@ -18,31 +25,11 @@ const createChildElement = (element, index) => {
     return element
   }
 
-  return createElement(
-    element.key || generateKey(index),
-    element.type,
-    element.props
-  )
+  return Element(element.key || generateKey(index), element.type, element.props)
 }
 
-const createElement = (key, type, props) => {
-  if (typeof type === 'function') {
-    return new Component(key, type, props)
-  } else {
-    return freeze({
-      $$typeof: T.ELEMENT,
-      key: key,
-      type: type,
-      props: props
-    })
-  }
-}
-
-export const h = (type, config, ...children) => {
-  if (
-    (typeof type === 'object' && type.$$typeof === T.COMPONENT) ||
-    type.$$typeof === T.ELEMENT
-  ) {
+export default function createElement(type, config, ...children) {
+  if (typeof type === 'object' && type.$$typeof === T.ELEMENT) {
     return type
   }
 
@@ -56,5 +43,5 @@ export const h = (type, config, ...children) => {
       .map((child, i) => createChildElement(child, i))
   }
 
-  return createElement(key, type, props)
+  return Element(key, type, props)
 }

@@ -30,27 +30,11 @@ export const flatten = arr =>
     (acc, val) => (isArray(val) ? acc.concat(flatten(val)) : acc.concat(val)),
     []
   )
-export const ieTextElement = element =>
+export const isTextElement = element =>
   typeof element === 'string' || typeof element === 'number'
 
-export const isComponent = element => element.$$typeof === T.COMPONENT
-
-export const getElement = element => {
-  if (isComponent(element)) {
-    return getElement(element.renderedElement)
-  }
-
-  return element
-}
-
-export const getChildren = element => getProps(element).children
-
-export const getProps = element => {
-  if (isComponent(element)) {
-    return getProps(element.renderedElement)
-  }
-
-  return element.props
+export const areElementsEqual = (a, b) => {
+  return a.key === b.key && a.type === b.type
 }
 
 // const dispatchEvent = async (type, node) => {

@@ -1,16 +1,6 @@
-import {
-  T,
-  isArray,
-  flatten,
-  ieTextElement,
-  isComponent,
-  eventsKey,
-  getProps,
-  getElement,
-  getChildren
-} from './utils'
+import { isArray, flatten, eventsKey } from './utils'
+import createComponent from './component/createComponent'
 
-const SVG_NS = 'http://www.w3.org/2000/svg'
 const XLINK_NS = 'http://www.w3.org/1999/xlink'
 
 const eventProxy = event => {
@@ -136,41 +126,10 @@ const createCSSValueIterator = value => {
 export const updateProps = (node, oldElement, newElement, isSvg) => {
   isSvg = isSvg || newElement.type === 'svg'
 
-  const merged = Object.assign(
-    {},
-    getProps(oldElement || {}),
-    getProps(newElement)
-  )
+  const merged = Object.assign({}, (oldElement || {}).props, newElement.props)
 
   for (const attribute in merged) {
     updateProp(node, attribute, merged[attribute], isSvg)
-  }
-
-  return node
-}
-
-export const renderElement = (element, isSvg) => {
-  if (ieTextElement(element)) {
-    return document.createTextNode(element)
-  }
-
-  const el = getElement(element)
-
-  isSvg = isSvg || el.type === 'svg'
-
-  const node = updateProps(
-    isSvg
-      ? document.createElementNS(SVG_NS, el.type)
-      : document.createElement(el.type),
-    null,
-    el,
-    isSvg
-  )
-
-  node.append(...getChildren(element).map(child => renderElement(child, isSvg)))
-
-  if (isComponent(element)) {
-    element.setNode(node)
   }
 
   return node
@@ -183,7 +142,9 @@ export const mount = (element, node) => {
     }
   }
 
-  node.appendChild(renderElement(element))
+  const component = createComponent(element)
 
-  return element
+  node.appendChild(component.render())
+
+  return component
 }
