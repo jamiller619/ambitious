@@ -107,7 +107,7 @@ export default inherit({
     const el = this.element
 
     if (isTextElement(el)) {
-      return document.createTextNode(el)
+      return (this.node = document.createTextNode(el))
     }
 
     this.isSvg = isSvg || el.type === 'svg'
