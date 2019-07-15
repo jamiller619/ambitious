@@ -10,7 +10,7 @@ const eventProxy = event => {
 const isNullOrFalse = t => t == null || t === false || t === 'false' || t === 0
 const reservedPropNames = ['list', 'draggable', 'spellcheck', 'translate']
 
-const updateProp = (node, key, value, isSvg) => {
+const updateProp = (node, key, value, namespace) => {
   if (key.startsWith('on')) {
     if (!node[eventsKey]) {
       node[eventsKey] = {}
@@ -60,17 +60,9 @@ const updateProp = (node, key, value, isSvg) => {
         })
       }
     } else if (key !== 'children') {
-      if (isSvg === false) {
-        if (
-          key in node &&
-          !reservedPropNames.includes(key) &&
-          node[key] != value
-        ) {
-          node[key] = value == null ? '' : value === 'false' ? false : value
-        }
-      } else {
+      if (namespace) {
         const name = key.replace(/^xlink:?/, '')
-        const ns = isSvg && key !== name
+        const ns = namespace && key !== name
 
         if (ns) {
           if (isNullOrFalse(value)) {
@@ -93,6 +85,14 @@ const updateProp = (node, key, value, isSvg) => {
               node.setAttribute(name, value)
             }
           }
+        }
+      } else {
+        if (
+          key in node &&
+          !reservedPropNames.includes(key) &&
+          node[key] != value
+        ) {
+          node[key] = value == null ? '' : value === 'false' ? false : value
         }
       }
     }
@@ -133,13 +133,11 @@ const getProps = element => {
   return {}
 }
 
-export const updateProps = (node, oldElement, newElement, isSvg) => {
-  isSvg = isSvg || newElement.type === 'svg'
-
+export const updateProps = (node, oldElement, newElement, namespace) => {
   const merged = Object.assign({}, getProps(oldElement), getProps(newElement))
 
   for (const attribute in merged) {
-    updateProp(node, attribute, merged[attribute], isSvg)
+    updateProp(node, attribute, merged[attribute], namespace)
   }
 
   return node

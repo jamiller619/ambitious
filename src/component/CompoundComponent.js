@@ -6,48 +6,52 @@ export default inherit({
   $$typeof: 'CompoundComponent',
   construct(element) {
     this.state = freeze(element.type.defaultState || {})
-    this.renderedComponent = this.renderComponent(this.state)
+    this.instance = createComponent(this.renderInstance())
     this.name = element.type.name
   },
   getChildren() {
-    return this.renderedComponent.getChildren()
+    return this.instance.getChildren()
   },
   getNode() {
-    return this.renderedComponent.getNode()
+    return this.instance.getNode()
   },
-  renderComponent(state) {
-    return createComponent(
-      this.element.type(this.element.props, state, this.setState.bind(this))
+  renderInstance() {
+    // this.instance = (new function (element, state, setState) {
+    //   return element.type(element, state, setState)
+    // }(this.element, this.state, this.setState))
+
+    return this.element.type(
+      this.element.props,
+      this.state,
+      this.setState.bind(this)
     )
   },
-  update(nextComponent) {
+  update(nextElement) {
     const prevElement = this.element
-    this.element = nextComponent.element
+    this.element = nextElement
 
     if (areElementsEqual(prevElement, this.element)) {
-      this.renderedComponent.update(nextComponent.renderedComponent)
+      this.instance.update(this.renderInstance())
     } else {
       const node = this.getNode()
+      const nextComponent = createComponent(nextElement)
 
       this.state = nextComponent.state
-      this.renderedComponent = nextComponent.renderedComponent
+      this.instance = nextComponent.instance
       this.name = nextComponent.name
 
       node.parentNode.replaceChild(this.render(), node)
     }
   },
   setState(partialNextState) {
-    const { state } = this
-    const nextState = Object.assign({}, state, partialNextState)
+    const nextState = Object.assign({}, this.state, partialNextState)
 
-    if (nextState !== state) {
-      const nextComponent = this.renderComponent(nextState)
-
+    if (nextState !== this.state) {
       this.state = freeze(nextState)
-      this.renderedComponent.update(nextComponent)
+      this.instance.update(this.renderInstance())
     }
   },
-  render(isSvg) {
-    return this.renderedComponent.render(isSvg)
+  render(namespace) {
+    return this.instance.render(namespace)
   }
 })

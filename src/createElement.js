@@ -1,4 +1,4 @@
-import { T, flatten, isTextElement, freeze } from './utils'
+import { T, flatten, freeze } from './utils'
 
 const generateKey = i => {
   return `$$_ambitious_${i}`
@@ -13,8 +13,8 @@ const Element = (key, type, props) =>
   })
 
 const createChildElement = (element, index) => {
-  if (isTextElement(element)) {
-    return element
+  if (typeof element !== 'object') {
+    return element.toString()
   }
 
   if (element.$$typeof === T.COMPONENT) {

@@ -1,66 +1,76 @@
-import { isTextElement, areElementsEqual } from '../utils'
+/* eslint-disable no-case-declarations */
+import { areElementsEqual } from '../utils'
 import { updateProps } from '../render'
 import { inherit } from './BaseComponent'
 import createComponent from './createComponent'
 
-const SVG_NS = 'http://www.w3.org/2000/svg'
-
-const updateChildren = (currentComponent, nextComponent) => {
-  const currentChildren = currentComponent.renderedChildren
-  const nextChildren = nextComponent.getChildren()
+const updateChildren = (currentComponent, nextElement) => {
+  const currentComponentChildren = currentComponent.renderedChildren
+  const nextElementChildren = nextElement.props.children
 
   let i = 0
-  let l = nextChildren.length
+  let l = nextElementChildren.length
 
   for (; i < l; i += 1) {
-    const nextChild = nextChildren[i]
-    const currentChildMatchIndex = currentChildren.findIndex(child =>
-      areElementsEqual(child.element, nextChild.element)
-    )
+    const nextElementChild = nextElementChildren[i]
 
-    if (currentChildMatchIndex > -1) {
-      const currentChildMatch = currentChildren[currentChildMatchIndex]
+    if (typeof nextElementChild !== 'object') {
+      const currentChild = currentComponentChildren[i]
 
-      if (isTextElement(currentChildMatch.element)) {
-        if (isTextElement(nextChild.element)) {
-          if (currentChildMatch.element !== nextChild.element) {
-            currentChildMatch.getNode().textContent = nextChild.element
-          }
-        } else {
-          currentComponent.replaceChild(nextChild, currentChildMatchIndex)
+      if (typeof currentChild.element !== 'object') {
+        if (currentChild.element !== nextElementChild) {
+          currentChild.getNode().textContent = currentChild.element = nextElementChild
         }
       } else {
-        currentChildMatch.update(nextChild)
+        currentComponent.replaceChild(
+          createComponent(nextElementChild),
+          currentChild
+        )
       }
     } else {
-      const currentChild = currentChildren[i]
+      const currentChildMatch = currentComponentChildren.find(child =>
+        areElementsEqual(child.element, nextElementChild)
+      )
 
-      if (currentChild) {
-        const nextChildMatch = nextChildren
-          .slice(i)
-          .find(child => areElementsEqual(child.element, currentChild.element))
-
-        if (nextChildMatch) {
-          currentComponent.insertBefore(nextChildMatch, i)
-        } else {
-          currentChild.update(nextChild)
-        }
+      if (currentChildMatch) {
+        currentChildMatch.update(nextElementChild)
       } else {
-        currentComponent.appendChild(nextChild)
+        const currentComponentChild = currentComponentChildren[i]
+
+        if (currentComponentChild) {
+          const nextElementChildMatch = nextElementChildren
+            .slice(i)
+            .find(child =>
+              areElementsEqual(child, currentComponentChild.element)
+            )
+
+          if (nextElementChildMatch) {
+            currentComponent.insertBefore(
+              createComponent(nextElementChildMatch),
+              i
+            )
+          } else {
+            currentComponentChild.update(nextElementChild)
+          }
+        } else {
+          currentComponent.appendChild(createComponent(nextElementChild))
+        }
       }
     }
   }
 
-  currentChildren.slice(i).map(child => currentComponent.removeChild(child))
+  currentComponentChildren
+    .slice(i)
+    .map(child => currentComponent.removeChild(child))
 }
 
 export default inherit({
   $$typeof: 'HostComponent',
   construct(element) {
     this.node = null
-    this.isSvg = false
+    this.namespace = null
 
-    if (!isTextElement(element)) {
+    if (typeof element === 'object') {
       this.renderedChildren = element.props.children.map(child =>
         createComponent(child)
       )
@@ -96,32 +106,37 @@ export default inherit({
     this.renderedChildren.splice(oldChildIndex, 1)
     this.node.removeChild(oldChild.getNode())
   },
-  update(nextComponent) {
+  update(nextElement) {
     const prevElement = this.element
-    this.element = nextComponent.element
+    this.element = nextElement
 
-    updateProps(this.node, prevElement, this.element, this.isSvg)
-    updateChildren(this, nextComponent)
+    updateProps(this.node, prevElement, this.element, this.namespace)
+    updateChildren(this, nextElement)
   },
-  render(isSvg) {
-    const el = this.element
+  render(namespace) {
+    const { element } = this
 
-    if (isTextElement(el)) {
-      return (this.node = document.createTextNode(el))
+    if (typeof element !== 'object') {
+      return (this.node = document.createTextNode(element))
     }
 
-    this.isSvg = isSvg || el.type === 'svg'
+    this.namespace = namespace || element.props.xmlns
+    if (element.type === 'svg') {
+      this.namespace = 'http://www.w3.org/2000/svg'
+    }
 
     const node = updateProps(
-      this.isSvg
-        ? document.createElementNS(SVG_NS, el.type)
-        : document.createElement(el.type),
+      this.namespace
+        ? document.createElementNS(this.namespace, element.type)
+        : document.createElement(element.type),
       null,
-      el,
-      this.isSvg
+      element,
+      this.namespace
     )
 
-    node.append(...this.renderedChildren.map(child => child.render(this.isSvg)))
+    node.append(
+      ...this.renderedChildren.map(child => child.render(this.namespace))
+    )
 
     return (this.node = node)
   }
