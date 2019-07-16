@@ -1,3 +1,4 @@
+/* eslint-disable new-cap */
 import { T, flatten, freeze } from './utils'
 
 const generateKey = i => {
@@ -7,9 +8,9 @@ const generateKey = i => {
 const Element = (key, type, props) =>
   freeze({
     $$typeof: T.ELEMENT,
-    key: key,
-    type: type,
-    props: props
+    key,
+    type,
+    props
   })
 
 const createChildElement = (element, index) => {
@@ -28,7 +29,17 @@ const createChildElement = (element, index) => {
   return Element(element.key || generateKey(index), element.type, element.props)
 }
 
-export default function createElement(type, config, ...children) {
+/**
+ * creates Element objects from jsx, or an object that
+ * represents the underlying view
+ *
+ * @param {string|number|function} type Element type
+ * @param {object} config the `props` object
+ * @param  {...array} children an array of Elements or a
+ * string
+ * @returns {Element} a new Element
+ */
+export default function createElement (type, config, ...children) {
   if (typeof type === 'object' && type.$$typeof === T.ELEMENT) {
     return type
   }

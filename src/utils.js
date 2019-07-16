@@ -22,14 +22,12 @@ const generateId = () =>
 export const eventsKey = `$$events__${generateId()}`
 
 export const freeze = Object.freeze ? obj => Object.freeze(obj) : obj => obj
-export const isArray = Array.isArray
+export const { isArray } = Array
 export const flatten = arr =>
   arr.reduce(
-    (acc, val) => (isArray(val) ? acc.concat(flatten(val)) : acc.concat(val)),
+    (acc, val) => isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
     []
   )
-export const isTextElement = element =>
-  typeof element === 'string' || typeof element === 'number'
 
 export const areElementsEqual = (a, b) => {
   return a.key === b.key && a.type === b.type

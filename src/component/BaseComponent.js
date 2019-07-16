@@ -1,6 +1,13 @@
 import { freeze } from '../utils'
 
-function BaseComponent($$typeof, element) {
+/**
+ * base type for all Component types
+ *
+ * @param {string} $$typeof either `HostComponent` or `CompoundComponent`
+ * @param {Element} element source element object
+ * @return {Component} new Component of specified type
+ */
+function BaseComponent ($$typeof, element) {
   this.$$typeof = $$typeof
   this.element = freeze(element)
 }
@@ -8,7 +15,8 @@ function BaseComponent($$typeof, element) {
 export const inherit = ComponentBodyDefinition => {
   const { $$typeof, ...ComponentBody } = ComponentBodyDefinition
 
-  function Component(...args) {
+  // eslint-disable-next-line require-jsdoc
+  function Component (...args) {
     BaseComponent.call(this, $$typeof, ...args)
 
     if (ComponentBody.construct) {
@@ -16,9 +24,10 @@ export const inherit = ComponentBodyDefinition => {
     }
   }
 
-  Component.prototype = Object.create(
-    Object.assign({}, BaseComponent.prototype, ComponentBody)
-  )
+  Component.prototype = Object.create({
+    ...BaseComponent.prototype,
+    ...ComponentBody
+  })
 
   Component.prototype.constructor = Component
 

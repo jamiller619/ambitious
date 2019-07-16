@@ -1,3 +1,6 @@
+/* eslint-disable max-lines-per-function */
+/* eslint-disable complexity */
+/* eslint-disable max-statements */
 import { isArray, flatten, eventsKey } from './utils'
 import createComponent from './component/createComponent'
 
@@ -7,9 +10,32 @@ const eventProxy = event => {
   return event.currentTarget[eventsKey][event.type](event)
 }
 
+const createCSSValueIterator = value => {
+  if (value == null || value === false) {
+    return []
+  }
+
+  let classList = []
+
+  if (isArray(value)) {
+    classList = value.map(className => createCSSValueIterator(className))
+  } else {
+    classList = value
+      .split(',')
+      .join(' ')
+      .split(' ')
+      .map(className => className.trim())
+      .filter(className =>
+          className != null && className !== false && className !== '')
+  }
+
+  return flatten(classList)
+}
+
 const isNullOrFalse = t => t == null || t === false || t === 'false' || t === 0
 const reservedPropNames = ['list', 'draggable', 'spellcheck', 'translate']
 
+// eslint-disable-next-line max-params
 const updateProp = (node, key, value, namespace) => {
   if (key.startsWith('on')) {
     if (!node[eventsKey]) {
@@ -61,7 +87,7 @@ const updateProp = (node, key, value, namespace) => {
       }
     } else if (key !== 'children') {
       if (namespace) {
-        const name = key.replace(/^xlink:?/, '')
+        const name = key.replace(/^xlink:?/u, '')
         const ns = namespace && key !== name
 
         if (ns) {
@@ -74,53 +100,25 @@ const updateProp = (node, key, value, namespace) => {
           ) {
             node.setAttributeNS(XLINK_NS, name, value)
           }
-        } else {
-          if (isNullOrFalse(value)) {
-            node.removeAttribute(name)
-          } else if (node.hasAttribute) {
-            if (
-              !node.hasAttribute(name) ||
-              (node.hasAttribute(name) && node.getAttribute(name) != value)
-            ) {
-              node.setAttribute(name, value)
-            }
+        } else if (isNullOrFalse(value)) {
+          node.removeAttribute(name)
+        } else if (node.hasAttribute) {
+          if (
+            !node.hasAttribute(name) ||
+            (node.hasAttribute(name) && node.getAttribute(name) != value)
+          ) {
+            node.setAttribute(name, value)
           }
         }
-      } else {
-        if (
-          key in node &&
-          !reservedPropNames.includes(key) &&
-          node[key] != value
-        ) {
-          node[key] = value == null ? '' : value === 'false' ? false : value
-        }
+      } else if (
+        key in node &&
+        !reservedPropNames.includes(key) &&
+        node[key] != value
+      ) {
+        node[key] = value == null ? '' : value === 'false' ? false : value
       }
     }
   }
-}
-
-const createCSSValueIterator = value => {
-  if (value == null || value === false) {
-    return []
-  }
-
-  let classList = []
-
-  if (isArray(value)) {
-    classList = value.map(className => createCSSValueIterator(className))
-  } else {
-    classList = value
-      .split(',')
-      .join(' ')
-      .split(' ')
-      .map(className => className.trim())
-      .filter(
-        className =>
-          className != null && className !== false && className !== ''
-      )
-  }
-
-  return flatten(classList)
 }
 
 const getProps = element => {
@@ -134,13 +132,29 @@ const getProps = element => {
 }
 
 export const updateProps = (node, oldElement, newElement, namespace) => {
-  const merged = Object.assign({}, getProps(oldElement), getProps(newElement))
+  const merged = { ...getProps(oldElement), ...getProps(newElement) }
 
   for (const attribute in merged) {
     updateProp(node, attribute, merged[attribute], namespace)
   }
 
   return node
+}
+
+const dispatchEvent = async (type, node) => {
+  const eventHandler = node && node[eventsKey] && node[eventsKey][type]
+
+  if (eventHandler) {
+    await eventHandler(node)
+  }
+
+  return null
+}
+
+export const dispatchEvents = async (type, node) => {
+  await Promise.all([...node.children].map(child => dispatchEvents(type, child)))
+
+  await dispatchEvent(type, node)
 }
 
 export const mount = (element, node) => {
@@ -152,7 +166,7 @@ export const mount = (element, node) => {
 
   const component = createComponent(element)
 
-  node.appendChild(component.render())
+  node.append(...component.render())
 
   return component
 }
