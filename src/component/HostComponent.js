@@ -105,53 +105,55 @@ export default inherit({
   getNode () {
     return this.node
   },
+  getChildIndex (child) {
+    return this.renderedChildren.findIndex(c => c === child)
+  },
   async replaceChild (newChild, oldChildIndex) {
     const oldChild = this.renderedChildren[oldChildIndex]
-    const newNode = newChild.render()
-    const oldNode = oldChild.getNode()
+    const newNode = newChild.render(this)
 
     await Promise.all([
-      dispatchEvents(EVENTS.BEFORE_ATTACH, newNode),
-      dispatchEvents(EVENTS.BEFORE_DETACH, oldNode)
+      dispatchEvents(EVENTS.BEFORE_ATTACH, newChild),
+      dispatchEvents(EVENTS.BEFORE_DETACH, oldChild)
     ])
 
     this.renderedChildren[oldChildIndex] = newChild
     this.node.insertBefore(newNode, oldChild.getNode())
 
-    dispatchEvents(EVENTS.ATTACH, newNode)
-    dispatchEvents(EVENTS.DETACH, oldNode)
+    dispatchEvents(EVENTS.ATTACH, newChild)
+    dispatchEvents(EVENTS.DETACH, oldChild)
   },
   async insertBefore (newChild, referenceIndex) {
     const refChild = this.renderedChildren[referenceIndex]
-    const newNode = newChild.render()
+    const newNode = newChild.render(this)
 
-    await dispatchEvents(EVENTS.BEFORE_ATTACH, newNode)
+    await dispatchEvents(EVENTS.BEFORE_ATTACH, newChild)
 
     this.renderedChildren.splice(referenceIndex, 0, newChild)
     this.node.insertBefore(newNode, refChild.getNode())
 
-    dispatchEvents(EVENTS.ATTACH, newNode)
+    dispatchEvents(EVENTS.ATTACH, newChild)
   },
   async appendChild (newChild) {
     const newNode = newChild.render()
 
-    await dispatchEvents(EVENTS.BEFORE_ATTACH, newNode)
+    await dispatchEvents(EVENTS.BEFORE_ATTACH, newChild)
 
     this.renderedChildren.push(newChild)
     this.node.appendChild(newNode)
 
-    dispatchEvents(EVENTS.ATTACH, newNode)
+    dispatchEvents(EVENTS.ATTACH, newChild)
   },
   async removeChild (oldChild) {
     const oldNode = oldChild.getNode()
     const oldChildIndex = this.renderedChildren.findIndex(child => child === oldChild)
 
-    await dispatchEvents(EVENTS.BEFORE_DETACH, oldNode)
+    await dispatchEvents(EVENTS.BEFORE_DETACH, oldChild)
 
     this.renderedChildren.splice(oldChildIndex, 1)
     this.node.removeChild(oldNode)
 
-    dispatchEvents(EVENTS.DETACH, oldNode)
+    dispatchEvents(EVENTS.DETACH, oldChild)
   },
   async update (nextElement) {
     const prevElement = this.element
@@ -164,7 +166,9 @@ export default inherit({
 
     await flushQueue(queue)
   },
-  render (namespace) {
+  render (parent, namespace) {
+    this.parent = parent
+
     const { element } = this
 
     if (typeof element !== 'object') {
@@ -185,7 +189,7 @@ export default inherit({
       this.namespace
     )
 
-    node.append(...this.renderedChildren.map(child => child.render(this.namespace)))
+    node.append(...this.renderedChildren.map(child => child.render(this, this.namespace)))
 
     return this.node = node
   }

@@ -1,4 +1,5 @@
-import { freeze, areElementsEqual, isArray } from '../utils'
+import { freeze, areElementsEqual, isArray, EVENTS } from '../utils'
+import { dispatchEvents } from '../render'
 import { inherit } from './BaseComponent'
 import createComponent from './createComponent'
 
@@ -15,6 +16,9 @@ export default inherit({
   getNode () {
     return this.instance.getNode()
   },
+  getChildIndex () {
+    return 0
+  },
   renderInstance () {
     return this.element.type(
       this.element.props,
@@ -22,22 +26,32 @@ export default inherit({
       this.setState.bind(this)
     )
   },
+  async replaceChild (newChild) {
+    const oldChild = this.instance
+    const newNode = newChild.render(this)
+    const oldNode = oldChild.getNode()
+
+    await Promise.all([
+      dispatchEvents(EVENTS.BEFORE_ATTACH, newChild),
+      dispatchEvents(EVENTS.BEFORE_DETACH, oldChild)
+    ])
+
+    this.instance = newChild
+    oldNode.parentNode.replaceChild(newNode, oldNode)
+
+    dispatchEvents(EVENTS.ATTACH, newChild)
+    dispatchEvents(EVENTS.DETACH, oldChild)
+  },
   async update (nextElement) {
     const prevElement = this.element
 
-    this.element = nextElement
-
-    if (areElementsEqual(prevElement, this.element)) {
+    if (areElementsEqual(prevElement, nextElement)) {
+      this.element = nextElement
       await this.instance.update(this.renderInstance())
     } else {
-      const node = this.getNode()
-      const nextComponent = createComponent(nextElement)
+      const index = this.parent.getChildIndex(this)
 
-      this.state = nextComponent.state
-      this.instance = nextComponent.instance
-      this.name = nextComponent.name
-
-      node.parentNode.replaceChild(this.render(), node)
+      await this.parent.replaceChild(createComponent(nextElement), index)
     }
   },
   async setState (partialNextState) {
@@ -48,9 +62,13 @@ export default inherit({
       await this.instance.update(this.renderInstance())
     }
   },
-  render (namespace) {
-    return isArray(this.instance)
-      ? this.instance.map(inst => inst.render(namespace))
-      : this.instance.render(namespace)
+  render (parent, namespace) {
+    this.parent = parent
+
+    if (isArray(this.instance)) {
+      throw new Error('Ambitious doesn\'t yet support arrays being returned from Components.')
+    }
+
+    return this.instance.render(this, namespace)
   }
 })

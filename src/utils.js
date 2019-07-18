@@ -1,8 +1,4 @@
-export const T = {
-  ELEMENT: Symbol('ambitious.element'),
-  COMPONENT: Symbol('ambitious.component'),
-  FRAGMENT: Symbol('ambitious.fragment')
-}
+export const AMBITIOUS_ELEMENT = Symbol('ambitious.element')
 
 export const EVENTS = {
   ATTACH: 'attach',

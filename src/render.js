@@ -141,20 +141,26 @@ export const updateProps = (node, oldElement, newElement, namespace) => {
   return node
 }
 
-const dispatchEvent = async (type, node) => {
+const dispatchEvent = async (type, component) => {
+  const { node } = component
   const eventHandler = node && node[eventsKey] && node[eventsKey][type]
 
   if (eventHandler) {
     await eventHandler(node)
   }
-
-  return null
 }
 
-export const dispatchEvents = async (type, node) => {
-  await Promise.all([...node.children].map(child => dispatchEvents(type, child)))
+export const dispatchEvents = async (type, component) => {
+  const children =
+    (component.instance && [component.instance]) || component.renderedChildren
 
-  await dispatchEvent(type, node)
+  if (children && children.length) {
+    await Promise.all(children.map(child => dispatchEvents(type, child)))
+  }
+
+  if (component.$$typeof === 'HostComponent') {
+    await dispatchEvent(type, component)
+  }
 }
 
 export const mount = (element, node) => {
@@ -166,7 +172,7 @@ export const mount = (element, node) => {
 
   const component = createComponent(element)
 
-  node.append(...component.render())
+  node.appendChild(component.render())
 
   return component
 }
