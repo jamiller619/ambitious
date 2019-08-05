@@ -1,4 +1,20 @@
-import { freeze } from '../utils'
+import { freeze, isArray, EFFECT_TYPE } from '../utils'
+
+const haveDepsChanged = (a, b) => {
+  if (!isArray(a) || !isArray(b) || a.length !== b.length) {
+    return true
+  }
+
+  const l = a.length
+
+  for (let i = 0; i < l; i += 1) {
+    if (a[i] != b[i]) {
+      return true
+    }
+  }
+
+  return false
+}
 
 /**
  * base type for all Component types
@@ -12,25 +28,59 @@ function BaseComponent ($$typeof, element) {
   this.$$typeof = $$typeof
   this.element = freeze(element)
   this.parent = null
+  this.effects = {}
 }
 
-export const inherit = ComponentBodyDefinition => {
-  const { $$typeof, ...ComponentBody } = ComponentBodyDefinition
+BaseComponent.prototype = {
+  addEffect (type) {
+    return (handler, deps) => {
+      const effectType = this.effects[type]
+      const lastDeps = effectType ? effectType.deps : null
+
+      this.effects[type] = { handler, deps, lastDeps }
+
+      return handler
+    }
+  },
+
+  async dispatchEffect (type, ...params) {
+    const effect = this.effects[type]
+
+    if (effect && haveDepsChanged(effect.lastDeps, effect.deps)) {
+      const result = await effect.handler.apply(this.element.type, [
+        this.getNode(),
+        ...params
+      ])
+
+      if (type === EFFECT_TYPE.RESOLVED && typeof result === 'function') {
+        this.addEffect(EFFECT_TYPE.CLEANUP)(result, effect.deps)
+      }
+
+      return result
+    }
+
+    return effect
+  }
+}
+
+export const inherit = component => {
+  const { $$typeof, ...ComponentBody } = component
 
   // eslint-disable-next-line require-jsdoc
   function Component (...args) {
     BaseComponent.call(this, $$typeof, ...args)
 
     if (ComponentBody.construct) {
-      ComponentBody.construct.call(this, ...args)
+      return ComponentBody.construct.apply(this, args)
     }
   }
 
-  Component.prototype = Object.create({
+  const ComponentProto = {
     ...BaseComponent.prototype,
     ...ComponentBody
-  })
+  }
 
+  Component.prototype = ComponentProto
   Component.prototype.constructor = Component
 
   return Component

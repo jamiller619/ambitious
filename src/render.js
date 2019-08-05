@@ -131,37 +131,41 @@ const getProps = element => {
   return {}
 }
 
+const { hasOwnProperty } = Object.prototype
+
 export const updateProps = (node, oldElement, newElement, namespace) => {
   const merged = { ...getProps(oldElement), ...getProps(newElement) }
 
   for (const attribute in merged) {
+    // if (hasOwnProperty.call(attribute, merged)) {
     updateProp(node, attribute, merged[attribute], namespace)
+    // }
   }
 
   return node
 }
 
-const dispatchEvent = async (type, component) => {
-  const { node } = component
-  const eventHandler = node && node[eventsKey] && node[eventsKey][type]
+// export const dispatchEvent = async (type, component, data) => {
+//   const { node } = component
+//   const eventHandler = node && node[eventsKey] && node[eventsKey][type]
 
-  if (eventHandler) {
-    await eventHandler(node)
-  }
-}
+//   if (eventHandler) {
+//     await eventHandler(typeof data === 'function' ? data(component) : data || node)
+//   }
+// }
 
-export const dispatchEvents = async (type, component) => {
-  const children =
-    (component.instance && [component.instance]) || component.renderedChildren
+// export const dispatchEvents = async (type, component, data) => {
+//   const children =
+//     (component.instance && [component.instance]) || component.renderedChildren
 
-  if (children && children.length) {
-    await Promise.all(children.map(child => dispatchEvents(type, child)))
-  }
+//   if (children && children.length) {
+//     await Promise.all(children.map(child => dispatchEvents(type, child, data)))
+//   }
 
-  if (component.$$typeof === 'HostComponent') {
-    await dispatchEvent(type, component)
-  }
-}
+//   if (component.$$typeof === COMPONENT_TYPE.HOST_COMPONENT) {
+//     await dispatchEvent(type, component, data)
+//   }
+// }
 
 export const mount = (element, node) => {
   if (node.lastChild) {

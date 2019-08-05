@@ -1,12 +1,14 @@
 export const AMBITIOUS_ELEMENT = Symbol('ambitious.element')
 
-export const EVENTS = {
-  ATTACH: 'attach',
-  BEFORE_ATTACH: 'beforeattach',
-  DETACH: 'detach',
-  BEFORE_DETACH: 'beforedetach',
-  CATCH: 'catch',
-  RENDER: 'render'
+export const COMPONENT_TYPE = {
+  HOST_COMPONENT: 0,
+  COMPOUND_COMPONENT: 1
+}
+
+export const EFFECT_TYPE = {
+  RESOLVED: 'resolved',
+  CLEANUP: 'cleanup',
+  STATE_UPDATE: 'stateupdate'
 }
 
 // simple random id generator
@@ -27,4 +29,29 @@ export const flatten = arr =>
 
 export const areElementsEqual = (a, b) => {
   return a.key === b.key && a.type === b.type
+}
+
+// eslint-disable-next-line max-statements
+export const areObjectsEqual = (a, b) => {
+  if (a == null || b == null) {
+    return false
+  }
+
+  const aprops = Object.getOwnPropertyNames(a)
+  const apropsLength = aprops.length
+  const bprops = Object.getOwnPropertyNames(b)
+
+  if (apropsLength != bprops.length) {
+    return false
+  }
+
+  for (let i = 0; i < apropsLength; i += 1) {
+    const propName = aprops[i]
+
+    if (a[propName] !== b[propName]) {
+      return false
+    }
+  }
+
+  return true
 }

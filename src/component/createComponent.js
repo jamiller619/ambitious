@@ -1,10 +1,9 @@
 import CompoundComponent from './CompoundComponent'
 import HostComponent from './HostComponent'
 
-const createComponent = element => {
+// eslint-disable-next-line require-jsdoc
+export default function createComponent (element) {
   return new (typeof element.type === 'function'
     ? CompoundComponent
     : HostComponent)(element)
 }
-
-export default createComponent
