@@ -35,59 +35,41 @@ export default inherit({
     const oldNode = oldChild.getNode()
     const newNode = newChild.render(this)
 
-    // await Promise.all([
-    //   dispatchEvents(EVENTS.BEFORE_ATTACH, newChild),
-    //   dispatchEvents(EVENTS.BEFORE_DETACH, oldChild)
-    // ])
     await oldChild.dispatchEffect(EFFECT_TYPE.CLEANUP)
 
     this.renderedChildren[oldChildIndex] = newChild
     this.node.replaceChild(newNode, oldNode)
 
     newChild.dispatchEffect(EFFECT_TYPE.RESOLVED)
-
-    // dispatchEvents(EVENTS.ATTACH, newChild)
-    // dispatchEvents(EVENTS.DETACH, oldChild)
   },
 
   insertBefore (newChild, referenceIndex) {
     const refChild = this.renderedChildren[referenceIndex]
     const newNode = newChild.render(this)
 
-    // await dispatchEvents(EVENTS.BEFORE_ATTACH, newChild)
-
     this.renderedChildren.splice(referenceIndex, 0, newChild)
     this.node.insertBefore(newNode, refChild.getNode())
 
     newChild.dispatchEffect(EFFECT_TYPE.RESOLVED)
-
-    // dispatchEvents(EVENTS.ATTACH, newChild)
   },
 
   appendChild (newChild) {
     const newNode = newChild.render()
 
-    // await dispatchEvents(EVENTS.BEFORE_ATTACH, newChild)
-
     this.renderedChildren.push(newChild)
     this.node.appendChild(newNode)
 
     newChild.dispatchEffect(EFFECT_TYPE.RESOLVED)
-
-    // dispatchEvents(EVENTS.ATTACH, newChild)
   },
 
   async removeChild (oldChild) {
     const oldNode = oldChild.getNode()
     const oldChildIndex = this.renderedChildren.findIndex(child => child === oldChild)
 
-    // await dispatchEvents(EVENTS.BEFORE_DETACH, oldChild)
     await oldChild.dispatchEffect(EFFECT_TYPE.CLEANUP)
 
     this.renderedChildren.splice(oldChildIndex, 1)
     this.node.removeChild(oldNode)
-
-    // dispatchEvents(EVENTS.DETACH, oldChild)
   },
 
   async update (nextElement) {
