@@ -1,10 +1,15 @@
+/* eslint-disable eqeqeq */
 /* eslint-disable max-lines-per-function */
 /* eslint-disable complexity */
 /* eslint-disable max-statements */
-import { isArray, flatten, eventsKey } from './utils'
-import createComponent from './component/createComponent'
+import { isArray, flatten, eventsKey } from './utils/shared'
+import createComponent from './components/createComponent'
 
 const XLINK_NS = 'http://www.w3.org/1999/xlink'
+const reservedPropNames = ['children', 'useEffect']
+const reservedAttributeNames = ['list', 'draggable', 'spellcheck', 'translate']
+
+const isNullOrFalse = t => t == null || t === false || t === 'false' || t === 0
 
 const eventProxy = event => {
   return event.currentTarget[eventsKey][event.type](event)
@@ -18,7 +23,7 @@ const createCSSValueIterator = value => {
   let classList = []
 
   if (isArray(value)) {
-    classList = value.map(className => createCSSValueIterator(className))
+    classList = value.map(createCSSValueIterator)
   } else {
     classList = value
       .split(',')
@@ -32,9 +37,6 @@ const createCSSValueIterator = value => {
   return flatten(classList)
 }
 
-const isNullOrFalse = t => t == null || t === false || t === 'false' || t === 0
-const reservedPropNames = ['list', 'draggable', 'spellcheck', 'translate']
-
 // eslint-disable-next-line max-params
 const updateProp = (node, key, value, namespace) => {
   if (key.startsWith('on')) {
@@ -43,129 +45,98 @@ const updateProp = (node, key, value, namespace) => {
     }
 
     const name = key.slice(2).toLowerCase()
+    const isValueArray = isArray(value)
+    const options = isValueArray ? value[1] : null
 
     if (value == null) {
-      node.removeEventListener(name, eventProxy)
+      node.removeEventListener(name, eventProxy, options)
     } else if (node[eventsKey][name] == null) {
-      node.addEventListener(name, eventProxy)
+      node.addEventListener(name, eventProxy, options)
     }
 
-    node[eventsKey][name] = value
-  } else if (node.nodeType !== 11) {
-    if (key === 'style') {
-      if (typeof value === 'object') {
-        Object.entries(value).forEach(([styleProp, styleValue]) => {
-          if (node.style[styleProp] !== styleValue) {
-            node.style[styleProp] = styleValue
-          }
-        })
-      } else {
-        node.style.cssText = value
-      }
-    } else if (key === 'class' || key === 'className') {
-      const oldCssClasses = node.classList
-      const newCssClasses = createCSSValueIterator(value)
-
-      if (oldCssClasses.length === 0) {
-        if (newCssClasses.length > 0) {
-          newCssClasses.forEach(cssClass => {
-            if (cssClass !== '') {
-              node.classList.add(cssClass)
-            }
-          })
+    node[eventsKey][name] = isValueArray ? value[0] : value
+  } else if (key === 'style') {
+    if (typeof value === 'object') {
+      Object.entries(value).forEach(([styleProp, styleValue]) => {
+        if (node.style[styleProp] !== styleValue) {
+          node.style[styleProp] = styleValue
         }
-      } else if (newCssClasses.length === 0) {
-        node.classList.remove(...oldCssClasses)
-      } else {
-        new Set([...oldCssClasses, ...newCssClasses]).forEach(cssClass => {
-          if (!newCssClasses.includes(cssClass)) {
-            node.classList.remove(cssClass)
-          } else if (cssClass !== '' && !oldCssClasses.contains(cssClass)) {
+      })
+    } else {
+      node.style.cssText = value
+    }
+  } else if (key === 'class' || key === 'className') {
+    const oldCssClasses = node.classList
+    const newCssClasses = createCSSValueIterator(value)
+
+    if (oldCssClasses.length === 0) {
+      if (newCssClasses.length > 0) {
+        newCssClasses.forEach(cssClass => {
+          if (cssClass !== '') {
             node.classList.add(cssClass)
           }
         })
       }
-    } else if (key !== 'children') {
-      if (namespace) {
-        const name = key.replace(/^xlink:?/u, '')
-        const ns = namespace && key !== name
-
-        if (ns) {
-          if (isNullOrFalse(value)) {
-            node.removeAttributeNS(XLINK_NS, name)
-          } else if (
-            !node.hasAttributeNS(XLINK_NS, name) ||
-            (node.hasAttributeNS(XLINK_NS, name) &&
-              node.getAttributeNS(XLINK_NS, name) != value)
-          ) {
-            node.setAttributeNS(XLINK_NS, name, value)
-          }
-        } else if (isNullOrFalse(value)) {
-          node.removeAttribute(name)
-        } else if (node.hasAttribute) {
-          if (
-            !node.hasAttribute(name) ||
-            (node.hasAttribute(name) && node.getAttribute(name) != value)
-          ) {
-            node.setAttribute(name, value)
-          }
+    } else if (newCssClasses.length === 0) {
+      node.classList.remove(...oldCssClasses)
+    } else {
+      new Set([...oldCssClasses, ...newCssClasses]).forEach(cssClass => {
+        if (!newCssClasses.includes(cssClass)) {
+          node.classList.remove(cssClass)
+        } else if (cssClass !== '' && !oldCssClasses.contains(cssClass)) {
+          node.classList.add(cssClass)
         }
-      } else if (
-        key in node &&
-        !reservedPropNames.includes(key) &&
-        node[key] != value
-      ) {
-        node[key] = value == null ? '' : value === 'false' ? false : value
+      })
+    }
+  } else if (!reservedPropNames.includes(key)) {
+    if (namespace) {
+      const name = key.replace(/^xlink:?/u, '')
+      const ns = namespace && key !== name
+
+      if (ns) {
+        if (isNullOrFalse(value)) {
+          node.removeAttributeNS(XLINK_NS, name)
+        } else if (
+          !node.hasAttributeNS(XLINK_NS, name) ||
+          (node.hasAttributeNS(XLINK_NS, name) &&
+            node.getAttributeNS(XLINK_NS, name) != value)
+        ) {
+          node.setAttributeNS(XLINK_NS, name, value)
+        }
+      } else if (isNullOrFalse(value)) {
+        node.removeAttribute(name)
+      } else if (node.hasAttribute) {
+        if (
+          !node.hasAttribute(name) ||
+          (node.hasAttribute(name) && node.getAttribute(name) != value)
+        ) {
+          node.setAttribute(name, value)
+        }
       }
+    } else if (
+      key in node &&
+      !reservedAttributeNames.includes(key) &&
+      node[key] != value
+    ) {
+      node[key] = value == null ? '' : value === 'false' ? false : value
     }
   }
 }
 
-const getProps = element => {
-  if (element != null) {
-    const { children, ...props } = element.props
-
-    return props
+// eslint-disable-next-line max-params
+export const updateProps = (node, oldElement, newElement, namespace) => {
+  const merged = {
+    ...oldElement && oldElement.props,
+    ...newElement && newElement.props
   }
 
-  return {}
-}
-
-const { hasOwnProperty } = Object.prototype
-
-export const updateProps = (node, oldElement, newElement, namespace) => {
-  const merged = { ...getProps(oldElement), ...getProps(newElement) }
-
+  // eslint-disable-next-line guard-for-in
   for (const attribute in merged) {
-    // if (hasOwnProperty.call(attribute, merged)) {
     updateProp(node, attribute, merged[attribute], namespace)
-    // }
   }
 
   return node
 }
-
-// export const dispatchEvent = async (type, component, data) => {
-//   const { node } = component
-//   const eventHandler = node && node[eventsKey] && node[eventsKey][type]
-
-//   if (eventHandler) {
-//     await eventHandler(typeof data === 'function' ? data(component) : data || node)
-//   }
-// }
-
-// export const dispatchEvents = async (type, component, data) => {
-//   const children =
-//     (component.instance && [component.instance]) || component.renderedChildren
-
-//   if (children && children.length) {
-//     await Promise.all(children.map(child => dispatchEvents(type, child, data)))
-//   }
-
-//   if (component.$$typeof === COMPONENT_TYPE.HOST_COMPONENT) {
-//     await dispatchEvent(type, component, data)
-//   }
-// }
 
 export const mount = (element, node) => {
   if (node.lastChild) {
@@ -174,9 +145,5 @@ export const mount = (element, node) => {
     }
   }
 
-  const component = createComponent(element)
-
-  node.appendChild(component.render())
-
-  return component
+  return createComponent(element).mount(node)
 }

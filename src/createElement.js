@@ -1,5 +1,5 @@
 /* eslint-disable new-cap */
-import { AMBITIOUS_ELEMENT, flatten, freeze } from './utils'
+import { AMBITIOUS_ELEMENT, flatten, freeze } from './utils/shared'
 
 const generateKey = i => {
   return `$$_ambitious_${i}`
@@ -22,8 +22,7 @@ const createChildElement = (element, index) => {
 }
 
 /**
- * creates Element objects from jsx, or an object that
- * represents the underlying view
+ * Entry point for JSX compilation
  *
  * @param {string|number|function} type Element type
  * @param {object} config the `props` object

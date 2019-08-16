@@ -1,3 +1,9 @@
+import { onNextFrame } from './shared'
+
+const nextFrameCallback = tasks => () => {
+  return Promise.all(tasks.map(task => task()))
+}
+
 /**
  * batching Queue for DOM manipulations
  * @returns {Queue} an instance of Queue
@@ -14,11 +20,10 @@ Queue.prototype = {
   },
   flush () {
     return new Promise(resolve => {
-      window.requestAnimationFrame(async () => {
-        await Promise.all(this.tasks.map(task => task && typeof task === 'function' && task()))
+      const { tasks } = this
 
-        resolve()
-      })
+      // eslint-disable-next-line prefer-arrow-callback
+      onNextFrame(nextFrameCallback(tasks)).then(resolve)
     })
   }
 }

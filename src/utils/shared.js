@@ -5,12 +5,6 @@ export const COMPONENT_TYPE = {
   COMPOUND_COMPONENT: 1
 }
 
-export const EFFECT_TYPE = {
-  RESOLVED: 'resolved',
-  CLEANUP: 'cleanup',
-  STATE_UPDATE: 'stateupdate'
-}
-
 // simple random id generator
 const generateId = () =>
   Math.random()
@@ -18,6 +12,17 @@ const generateId = () =>
     .replace('0.', '')
 
 export const eventsKey = `$$events__${generateId()}`
+
+export const onNextFrame = callback =>
+  new Promise(resolve => {
+    window.requestAnimationFrame(time => {
+      if (typeof callback === 'function') {
+        callback.call(callback, time)
+      }
+
+      resolve()
+    })
+  })
 
 export const freeze = Object.freeze ? obj => Object.freeze(obj) : obj => obj
 export const { isArray } = Array

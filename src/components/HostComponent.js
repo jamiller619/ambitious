@@ -1,10 +1,10 @@
-/* eslint-disable no-loop-func */
-/* eslint-disable max-statements */
-import { COMPONENT_TYPE, EFFECT_TYPE } from '../utils'
+import { COMPONENT_TYPE } from '../utils/shared'
+import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
+
 import { updateProps } from '../render'
 import { inherit } from './BaseComponent'
 import createComponent from './createComponent'
-import Queue from '../queue'
+import Queue from '../utils/Queue'
 import { updateChildren } from './updateChildren'
 
 export default inherit({
@@ -14,12 +14,11 @@ export default inherit({
     this.node = null
     this.namespace = null
     this.renderedChildren =
-      element.props &&
-      element.props.children.map(child => createComponent(child))
+      element.props && element.props.children.map(createComponent)
   },
 
   getChildren () {
-    return this.renderedChildren
+    return this.renderedChildren || []
   },
 
   getNode () {
@@ -35,12 +34,12 @@ export default inherit({
     const oldNode = oldChild.getNode()
     const newNode = newChild.render(this)
 
-    await oldChild.dispatchEffect(EFFECT_TYPE.CLEANUP)
+    await dispatchEffectHelper(oldChild, EFFECT_TYPE.CLEANUP)
 
     this.renderedChildren[oldChildIndex] = newChild
     this.node.replaceChild(newNode, oldNode)
 
-    newChild.dispatchEffect(EFFECT_TYPE.RESOLVED)
+    dispatchEffectHelper(newChild, EFFECT_TYPE.RESOLVED)
   },
 
   insertBefore (newChild, referenceIndex) {
@@ -50,7 +49,7 @@ export default inherit({
     this.renderedChildren.splice(referenceIndex, 0, newChild)
     this.node.insertBefore(newNode, refChild.getNode())
 
-    newChild.dispatchEffect(EFFECT_TYPE.RESOLVED)
+    dispatchEffectHelper(newChild, EFFECT_TYPE.RESOLVED)
   },
 
   appendChild (newChild) {
@@ -59,14 +58,14 @@ export default inherit({
     this.renderedChildren.push(newChild)
     this.node.appendChild(newNode)
 
-    newChild.dispatchEffect(EFFECT_TYPE.RESOLVED)
+    dispatchEffectHelper(newChild, EFFECT_TYPE.RESOLVED)
   },
 
   async removeChild (oldChild) {
     const oldNode = oldChild.getNode()
     const oldChildIndex = this.renderedChildren.findIndex(child => child === oldChild)
 
-    await oldChild.dispatchEffect(EFFECT_TYPE.CLEANUP)
+    await dispatchEffectHelper(oldChild, EFFECT_TYPE.CLEANUP)
 
     this.renderedChildren.splice(oldChildIndex, 1)
     this.node.removeChild(oldNode)
@@ -110,7 +109,9 @@ export default inherit({
       this.namespace
     )
 
-    node.append(...this.renderedChildren.map(child => child.render(this, this.namespace)))
+    node.append(...this.renderedChildren
+        .map(child => child.render(this, this.namespace))
+        .filter(child => child != null))
 
     return this.node = node
   }

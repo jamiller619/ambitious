@@ -1,12 +1,12 @@
 import {
   areElementsEqual,
   isArray,
-  EFFECT_TYPE,
-  COMPONENT_TYPE
-} from '../utils'
+  COMPONENT_TYPE,
+  onNextFrame
+} from '../utils/shared'
 import { inherit } from './BaseComponent'
 import createComponent from './createComponent'
-import Queue from '../queue'
+import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
 import { Store } from './Store'
 
 // eslint-disable-next-line require-jsdoc
@@ -15,7 +15,9 @@ function stateUpdateHandler (component) {
     if (component.instance) {
       await component.instance.update(component.renderInstance(component.element))
 
-      component.dispatchEffect(EFFECT_TYPE.STATE_UPDATE, oldState, newState)
+      component.hooks.dispatchEffect(EFFECT_TYPE.STATE_UPDATE, {
+        data: [oldState, newState]
+      })
     }
   }
 }
@@ -26,44 +28,57 @@ export default inherit({
   construct (element) {
     this.name = element.type.name
     this.store = new Store(element.type.defaultState, stateUpdateHandler(this))
-    this.instance = createComponent(this.renderInstance())
+
+    const instance = this.renderInstance(element)
+
+    this.instance = (instance && createComponent(instance)) || null
+
+    this.hooks.setName(this.name)
   },
 
   getChildren () {
-    return this.instance.getChildren()
+    return (this.instance && this.instance.getChildren()) || []
   },
 
   getNode () {
-    return this.instance.getNode()
+    return (this.instance && this.instance.getNode()) || null
   },
 
   getChildIndex () {
     return 0
   },
 
-  renderInstance (prevElement) {
+  renderInstance (element) {
     const props = {
-      ...this.element.props,
-      useEffect: this.addEffect(EFFECT_TYPE.RESOLVED).bind(this)
+      ...element.props,
+      useEffect: this.hooks
+        .registerEffect(EFFECT_TYPE.RESOLVED)
+        .bind(this.hooks)
     }
 
     const state = {
       ...this.store.state,
-      onUpdate: this.addEffect(EFFECT_TYPE.STATE_UPDATE).bind(this),
+      onUpdate: this.hooks
+        .registerEffect(EFFECT_TYPE.STATE_UPDATE)
+        .bind(this.hooks),
       setState: this.store.setState.bind(this.store)
     }
 
-    const element = this.element.type.call(this.element.type, props, state)
+    const instance = element.type.call(element.type, props, state)
 
-    if (this.instance) {
-      const node = this.getNode()
-
-      if (node.isConnected === true) {
-        this.dispatchEffect(EFFECT_TYPE.RESOLVED, prevElement.props)
-      }
+    if (instance) {
+      onNextFrame(() => dispatchEffectHelper(this, EFFECT_TYPE.RESOLVED))
     }
 
-    return element
+    return instance
+  },
+
+  async removeChild (child) {
+    const node = child.getNode()
+
+    await dispatchEffectHelper(child, EFFECT_TYPE.CLEANUP)
+
+    onNextFrame(() => this.getNode().parentNode.removeChild(node))
   },
 
   async replaceChild (newChild) {
@@ -73,16 +88,10 @@ export default inherit({
 
     this.instance = newChild
 
-    const queue = new Queue()
+    await dispatchEffectHelper(oldChild, EFFECT_TYPE.CLEANUP)
+    await onNextFrame(() => oldNode.parentNode.replaceChild(newNode, oldNode))
 
-    queue.addTask(() => {
-      oldNode.parentNode.replaceChild(newNode, oldNode)
-    })
-
-    await oldChild.dispatchEffect(EFFECT_TYPE.CLEANUP)
-    await queue.flush()
-
-    newChild.dispatchEffect(EFFECT_TYPE.RESOLVED)
+    dispatchEffectHelper(newChild, EFFECT_TYPE.RESOLVED)
   },
 
   async update (nextElement) {
@@ -90,7 +99,7 @@ export default inherit({
 
     if (areElementsEqual(prevElement, nextElement)) {
       this.element = nextElement
-      await this.instance.update(this.renderInstance(prevElement))
+      await this.instance.update(this.renderInstance(nextElement))
     } else {
       const index = this.parent.getChildIndex(this)
 
@@ -105,6 +114,6 @@ export default inherit({
       throw new Error('Ambitious doesn\'t yet support arrays being returned from Components.')
     }
 
-    return this.instance.render(this, namespace)
+    return (this.instance && this.instance.render(this, namespace)) || null
   }
 })
