@@ -29,7 +29,6 @@
     "brace-style": ["error", "1tbs"],
     "callback-return": "error",
     "camelcase": "error",
-    "capitalized-comments": ["error", "never"],
     "class-methods-use-this": "error",
     "comma-dangle": "error",
     "comma-spacing": [
