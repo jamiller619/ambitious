@@ -1,8 +1,17 @@
 import createElement from './createElement'
-import { mount } from './render'
+import createComponent from './components/createComponent'
 
-const ambitious = {
-  createElement
+const render = (element, parentNode, component) => {
+  if (component) {
+    return component.update(element)
+  }
+
+  return Promise.resolve(createComponent(element).mount(parentNode))
 }
 
-export { ambitious as default, mount }
+const ambitious = {
+  createElement,
+  render
+}
+
+export { ambitious as default, render }

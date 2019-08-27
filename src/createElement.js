@@ -1,11 +1,11 @@
 /* eslint-disable new-cap */
-import { AMBITIOUS_ELEMENT, flatten, freeze } from './utils'
+import { AMBITIOUS_ELEMENT, flatten, freeze } from './utils/shared'
 
 const generateKey = i => {
   return `$$_ambitious_${i}`
 }
 
-const Element = (key, type, props) =>
+const AmbitiousElement = (type, key, props) =>
   freeze({
     $$typeof: AMBITIOUS_ELEMENT,
     key,
@@ -18,12 +18,15 @@ const createChildElement = (element, index) => {
     return element
   }
 
-  return Element(element.key || generateKey(index), element.type, element.props)
+  return AmbitiousElement(
+    element.type,
+    element.key || generateKey(index),
+    element.props
+  )
 }
 
 /**
- * creates Element objects from jsx, or an object that
- * represents the underlying view
+ * Entry point for JSX compilation
  *
  * @param {string|number|function} type Element type
  * @param {object} config the `props` object
@@ -32,8 +35,10 @@ const createChildElement = (element, index) => {
  * @returns {Element} a new Element
  */
 export default function createElement (type, config, ...children) {
-  if (typeof type === 'object' && type.$$typeof === AMBITIOUS_ELEMENT) {
-    return type
+  if (typeof type === 'object') {
+    if (type.$$typeof === AMBITIOUS_ELEMENT) return type
+
+    return AmbitiousElement(type)
   }
 
   const { key, ...props } = config || {}
@@ -46,5 +51,5 @@ export default function createElement (type, config, ...children) {
       .map((child, i) => createChildElement(child, i))
   }
 
-  return Element(key, type, props)
+  return AmbitiousElement(type, key, props)
 }

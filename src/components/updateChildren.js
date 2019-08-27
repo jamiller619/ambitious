@@ -1,7 +1,7 @@
 /* eslint-disable max-depth */
-import { areElementsEqual } from '../utils'
+import { areElementsEqual } from '../utils/shared'
 import createComponent from './createComponent'
-import Queue from '../queue'
+import Queue from '../utils/Queue'
 
 // eslint-disable-next-line max-params
 const enqueueInsertBefore = (queue, component, index, nextElement) => {
@@ -14,6 +14,13 @@ const enqueueInsertBefore = (queue, component, index, nextElement) => {
 export const updateChildren = (currentComponent, nextElement) => {
   const queue = new Queue()
   const currentComponentChildren = currentComponent.renderedChildren
+
+  if (nextElement == null) {
+    queue.addTask(() => currentComponent.parent.removeChild(currentComponent))
+
+    return queue
+  }
+
   const nextElementChildren = nextElement.props.children
 
   let i = 0
@@ -21,23 +28,23 @@ export const updateChildren = (currentComponent, nextElement) => {
 
   for (; i < l; i += 1) {
     const nextElementChild = nextElementChildren[i]
+    const currentChild = currentComponentChildren && currentComponentChildren[i]
 
-    if (typeof nextElementChild !== 'object') {
-      const currentChild = currentComponentChildren[i]
-
+    if (
+      currentChild &&
+      (typeof nextElementChild !== 'object' || typeof currentChild !== 'object')
+    ) {
       if (typeof currentChild.element !== 'object') {
         if (currentChild.element !== nextElementChild) {
-          queue.addTask(() => {
-            currentChild.getNode().textContent = currentChild.element = nextElementChild
-          })
+          queue.addTask(() =>
+              currentChild.getNode().textContent = currentChild.element = nextElementChild)
         }
       } else {
-        queue.addTask(async () => {
-          await currentComponent.replaceChild(
+        queue.addTask(() =>
+          currentComponent.replaceChild(
             createComponent(nextElementChild),
             currentChild
-          )
-        })
+          ))
       }
     } else {
       const currentChildMatch = currentComponentChildren.find(child =>
@@ -73,9 +80,11 @@ export const updateChildren = (currentComponent, nextElement) => {
     }
   }
 
-  currentComponentChildren.slice(i).forEach(child => {
-    queue.addTask(() => currentComponent.removeChild(child))
-  })
+  if (currentComponentChildren) {
+    currentComponentChildren.slice(i).forEach(child => {
+      queue.addTask(() => currentComponent.removeChild(child))
+    })
+  }
 
   return queue
 }

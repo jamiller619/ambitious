@@ -1,7 +1,8 @@
-import { freeze, areObjectsEqual } from '../utils'
+import { freeze, areObjectsEqual } from '../utils/shared'
 
 /**
- * the Store object handles state for the Compound Component
+ * The Store object is responsible for handling state
+ *
  * @param {object} initialState initial state object
  * @param {Function} updateHandler callback function
  * @returns {Store} new instance of a Store object
@@ -12,12 +13,12 @@ export function Store (initialState, updateHandler) {
   this.state = freeze(initialState || {})
 }
 
-Store.prototype.setState = async function setState (partialState) {
+Store.prototype.setState = async function setState (partialStateOrCallback) {
   const currentState = this.state
   const nextState =
-    typeof partialState === 'function'
-      ? partialState(currentState)
-      : { ...currentState, ...partialState }
+    typeof partialStateOrCallback === 'function'
+      ? { ...currentState, ...partialStateOrCallback(currentState) }
+      : { ...currentState, ...partialStateOrCallback }
 
   if (nextState !== currentState) {
     this.state = freeze(nextState)
