@@ -1,26 +1,9 @@
 import reconciler from '../reconciler'
-import { isArray } from 'util'
+import { isArray } from '../utils/shared'
 
 export const EFFECT_TYPE = {
   RESOLVED: 'resolved',
-  CLEANUP: 'cleanup',
-  STATE_UPDATE: 'stateupdate'
-}
-
-export const createEffectsContainer = () => {
-  return {
-    [EFFECT_TYPE.RESOLVED]: null,
-    [EFFECT_TYPE.CLEANUP]: null,
-    [EFFECT_TYPE.STATE_UPDATE]: null
-  }
-}
-
-export const runEffect = (hook, type, data) => {
-  const { handler, deps } = hook.effects[type]
-
-  hook.effects[type].lastDeps = deps
-
-  return handler.apply(handler, data)
+  CLEANUP: 'cleanup'
 }
 
 // eslint-disable-next-line max-params
@@ -40,39 +23,22 @@ export const createEffect = (hook, type, handler, deps) => {
 }
 
 const dispatchEffect = (component, type, ...params) => {
-  return new Promise(resolve => {
-    if (component.hooks) {
-      const result = component.hooks.dispatchEffect(type, ...params)
+  if (component.hooks) {
+    return component.hooks.dispatchEffect(type, ...params)
+  }
 
-      resolve(result)
-    } else {
-      resolve()
-    }
-  })
-}
-
-const dispatchChildEffects = (component, type, ...params) => {
-  return Promise.all(component.getChildren().map(child => dispatchEffect(child, type, ...params)))
-}
-
-const dispatchAllEffects = (component, type, ...params) => {
-  return new Promise(resolve => {
-    const dispatch = node => {
-      dispatchChildEffects(component, type, [node, ...params]).then(() => {
-        dispatchEffect(component, type, [node, ...params]).then(resolve)
-      })
-    }
-
-    if (type === EFFECT_TYPE.RESOLVED) {
-      reconciler.whenNodeAttached(component, dispatch)
-    } else {
-      dispatch(component.getNode())
-    }
-  })
+  return Promise.resolve()
 }
 
 export const dispatchEffectHelper = (component, type, ...params) => {
-  return new Promise(resolve => {
-    dispatchAllEffects(component, type, ...params).then(resolve)
-  })
+  const dispatch = node =>
+    Promise.all(component
+        .getChildren()
+        .map(child => dispatchEffectHelper(child, type, [node, ...params]))).then(() => dispatchEffect(component, type, [node, ...params]))
+
+  if (type === EFFECT_TYPE.RESOLVED) {
+    return reconciler.whenNodeAttached(component, dispatch)
+  }
+
+  return dispatch(component.getNode())
 }

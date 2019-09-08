@@ -1,10 +1,15 @@
-/* eslint-disable eqeqeq */
-import {
-  createEffect,
-  createEffectsContainer,
-  runEffect,
-  EFFECT_TYPE
-} from './hookUtils'
+import { createEffect, EFFECT_TYPE } from './hookUtils'
+import { isPromise } from '../utils/shared'
+
+const runEffect = (hook, type, data) => {
+  const { handler, deps } = hook.effects[type]
+
+  hook.effects[type].lastDeps = deps
+
+  const result = handler.apply(handler, data)
+
+  return isPromise(result) ? result : Promise.resolve(result)
+}
 
 /**
  * Hooks, with a similar API to React
@@ -15,7 +20,10 @@ import {
  */
 export function Hooks (componentName) {
   this.componentName = componentName
-  this.effects = createEffectsContainer()
+  this.effects = {
+    [EFFECT_TYPE.RESOLVED]: null,
+    [EFFECT_TYPE.CLEANUP]: null
+  }
 }
 
 Hooks.prototype = {
@@ -49,21 +57,26 @@ Hooks.prototype = {
     return false
   },
 
-  async dispatchEffect (type, data) {
-    if (!this.effects[type]) return null
-    if (type === EFFECT_TYPE.CLEANUP) return runEffect(this, type, data)
+  // eslint-disable-next-line max-statements
+  dispatchEffect (type, data) {
+    if (!this.effects[type]) {
+      return Promise.resolve(null)
+    }
+
+    if (type === EFFECT_TYPE.CLEANUP) {
+      return runEffect(this, type, data)
+    }
 
     if (this.haveDepsChanged(type)) {
       const { deps } = this.effects[type]
-      const result = await runEffect(this, type, data)
 
-      if (type === EFFECT_TYPE.RESOLVED && typeof result === 'function') {
-        this.registerEffect(EFFECT_TYPE.CLEANUP)(result, deps)
-      }
-
-      return result
+      runEffect(this, type, data).then(result => {
+        if (type === EFFECT_TYPE.RESOLVED && typeof result === 'function') {
+          this.registerEffect(EFFECT_TYPE.CLEANUP)(result, deps)
+        }
+      })
     }
 
-    return null
+    return Promise.resolve(null)
   }
 }

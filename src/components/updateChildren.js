@@ -1,14 +1,12 @@
 /* eslint-disable max-depth */
 import { areElementsEqual } from '../AmbitiousElement'
-import createComponent from './createComponent'
+import { createComponent } from '../AmbitiousComponent'
 import Queue from '../utils/Queue'
 
 // eslint-disable-next-line max-params
-const enqueueInsertBefore = (queue, component, index, nextElement) => {
-  return queue.addTask(() => {
-    return component.insertBefore(createComponent(nextElement), index)
-  })
-}
+const enqueueInsertBefore = (queue, component, index, nextElement) =>
+  queue.addTask(() =>
+    component.insertBefore(createComponent(nextElement), index))
 
 // eslint-disable-next-line max-lines-per-function, max-statements
 export const updateChildren = (currentComponent, nextElement) => {
@@ -72,9 +70,8 @@ export const updateChildren = (currentComponent, nextElement) => {
             currentComponentChild.update(nextElementChild)
           }
         } else {
-          queue.addTask(() => {
-            return currentComponent.appendChild(createComponent(nextElementChild))
-          })
+          queue.addTask(() =>
+            currentComponent.appendChild(createComponent(nextElementChild)))
         }
       }
     }

@@ -1,10 +1,10 @@
-import COMPONENT_TYPE from './type'
+import COMPONENT_TYPE from './types'
 import reconciler from '../reconciler'
-import createComponent from './createComponent'
+import { createComponent } from '../AmbitiousComponent'
 import Queue from '../utils/Queue'
 import { updateChildren } from './updateChildren'
+import { areElementsEqual } from '../AmbitiousElement'
 
-// eslint-disable-next-line max-lines-per-function
 export default {
   $$typeof: COMPONENT_TYPE.HOST_COMPONENT,
 
@@ -26,20 +26,20 @@ export default {
     return this.node
   },
 
-  async replaceChild (newChild, oldChild) {
+  replaceChild (newChild, oldChild) {
     const oldChildIndex = this.children.findIndex(child => child === oldChild)
 
-    await reconciler.replaceChild(this, newChild, oldChild)
-
     this.children[oldChildIndex] = newChild
+
+    return reconciler.replaceChild(this, newChild, oldChild)
   },
 
-  async insertBefore (newChild, referenceIndex) {
+  insertBefore (newChild, referenceIndex) {
     const refChild = this.children[referenceIndex]
 
-    await reconciler.insertBefore(this, newChild, refChild)
-
     this.children.splice(referenceIndex, 0, newChild)
+
+    return reconciler.insertBefore(this, newChild, refChild)
   },
 
   appendChild (newChild) {
@@ -48,25 +48,24 @@ export default {
     return reconciler.appendChild(this, newChild)
   },
 
-  async removeChild (oldChild) {
+  removeChild (oldChild) {
     const oldChildIndex = this.children.findIndex(child => child === oldChild)
 
-    await reconciler.removeChild(this, oldChild)
-
     this.children.splice(oldChildIndex, 1)
+
+    return reconciler.removeChild(this, oldChild)
   },
 
   // eslint-disable-next-line max-statements
-  async update (nextElement) {
+  update (nextElement) {
     const prevElement = this.element
     const queue = new Queue()
-    const node = this.getNode()
 
     this.element = nextElement
 
-    if (node && node.nodeType !== Node.TEXT_NODE) {
+    if (areElementsEqual(prevElement, nextElement)) {
       queue.addTask(() => {
-        return reconciler.updateProps(
+        reconciler.updateProps(
           this.node,
           prevElement,
           this.element,
@@ -80,18 +79,11 @@ export default {
         queue.addTask(...childUpdates.tasks)
       }
     } else {
-      queue.addTask(() => {
-        return reconciler.replaceChild(
-          this.parent,
-          createComponent(nextElement),
-          this
-        )
-      })
+      queue.addTask(() =>
+        reconciler.replaceChild(this.parent, createComponent(nextElement), this))
     }
 
-    await queue.flush()
-
-    return this
+    return queue.flush()
   },
 
   render (parent) {

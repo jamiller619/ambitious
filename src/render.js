@@ -1,15 +1,13 @@
 import { createElement } from './AmbitiousElement'
-import createComponent from './components/createComponent'
+import { createComponent } from './AmbitiousComponent'
 
 export default (element, parentNode) => {
-  return new Promise(resolve => {
-    const parentComponent = createComponent(createElement(parentNode))
-    const childComponent = createComponent(element)
+  const parentComponent = createComponent(createElement(parentNode))
+  const childComponent = createComponent(element)
 
-    parentComponent.children.push(childComponent)
+  parentComponent.children.push(childComponent)
 
-    parentComponent.render()
+  parentComponent.render()
 
-    resolve(parentComponent)
-  })
+  return parentComponent
 }

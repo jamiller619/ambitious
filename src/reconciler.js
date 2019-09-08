@@ -5,6 +5,7 @@ const XLINK_NS = 'http://www.w3.org/1999/xlink'
 const reservedPropNames = ['children', 'useEffect']
 const reservedAttributeNames = ['list', 'draggable', 'spellcheck', 'translate']
 
+const isHTMLElement = obj => obj instanceof Element
 const isNullOrFalse = t => t == null || t === false || t === 'false' || t === 0
 
 const eventProxy = event => {
@@ -129,9 +130,8 @@ const reconciler = {
     )
   },
 
-  whenNodeAttached: (node, callback) => {
-    reconciler.waitForAttachedNode(node).then(callback)
-  },
+  whenNodeAttached: (node, callback) =>
+    reconciler.waitForAttachedNode(node).then(callback),
 
   waitForAttachedNode: component => {
     return new Promise(resolve => {
@@ -158,8 +158,7 @@ const reconciler = {
   renderNode: component => {
     const { element, parent } = component
 
-    // Check if HTML
-    if (element.type instanceof Element) {
+    if (isHTMLElement(element.type)) {
       return element.type
     }
 
@@ -179,83 +178,71 @@ const reconciler = {
     )
   },
 
-  replaceChild: async (
-    parentComponent,
-    newChildComponent,
-    oldChildComponent
-  ) => {
-    await dispatchEffectHelper(oldChildComponent, EFFECT_TYPE.CLEANUP)
+  replaceChild: (parentComponent, newChildComponent, oldChildComponent) => {
+    return dispatchEffectHelper(oldChildComponent, EFFECT_TYPE.CLEANUP)
+      .then(() =>
+        onNextFrame(() => {
+          const oldNode = oldChildComponent.getNode()
 
-    await onNextFrame(() => {
-      const oldNode = oldChildComponent.getNode()
+          const newNode = newChildComponent.render(parentComponent)
 
-      const newNode = newChildComponent.render(parentComponent)
-
-      oldNode.parentNode.replaceChild(newNode, oldNode)
-    })
-
-    return dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED)
+          oldNode.parentNode.replaceChild(newNode, oldNode)
+        }))
+      .then(() => dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED))
   },
 
   appendChild: (parentComponent, childComponent) => {
-    if (!childComponent) return null
     const childNode = childComponent.render(parentComponent)
 
-    onNextFrame(() => {
+    return onNextFrame(() => {
       const parentNode = parentComponent.getNode()
 
       if (childNode && parentNode) {
         parentNode.appendChild(childNode)
       }
-    })
-
-    return dispatchEffectHelper(childComponent, EFFECT_TYPE.RESOLVED)
+    }).then(() => dispatchEffectHelper(childComponent, EFFECT_TYPE.RESOLVED))
   },
 
-  removeChild: async (parentComponent, childComponent) => {
-    await dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP)
+  removeChild: (parentComponent, childComponent) => {
+    return dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP).then(() =>
+      onNextFrame(() => {
+        const parentNode = parentComponent.getNode()
+        const childNode = childComponent.getNode()
 
+        if (childNode.isConnected && parentNode === childNode.parentNode) {
+          parentNode.removeChild(childNode)
+        }
+      }))
+  },
+
+  insertBefore: (parentComponent, newChildComponent, referenceComponent) => {
     return onNextFrame(() => {
-      const parentNode = parentComponent.getNode()
-      const childNode = childComponent.getNode()
-
-      if (childNode.isConnected && parentNode === childNode.parentNode) {
-        parentNode.removeChild(childNode)
-      }
-    })
-  },
-
-  insertBefore: async (
-    parentComponent,
-    newChildComponent,
-    referenceComponent
-  ) => {
-    await onNextFrame(() => {
       const newNode = newChildComponent.render(parentComponent)
       const refNode = referenceComponent.getNode()
       const parentNode = parentComponent.getNode()
 
       parentNode.insertBefore(newNode, refNode)
-    })
-
-    return dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED)
+    }).then(() => dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED))
   },
 
   createTextNode: text => document.createTextNode(text),
 
   // eslint-disable-next-line max-params
   updateProps: (node, oldElement, newElement, namespace) => {
-    const merged = {
-      ...oldElement && oldElement.props,
-      ...newElement && newElement.props
-    }
+    if (node && node.nodeType !== Node.TEXT_NODE) {
+      const merged = Object.assign(
+        {},
+        oldElement && oldElement.props,
+        newElement && newElement.props
+      )
 
-    onNextFrame(() => {
-      // eslint-disable-next-line guard-for-in
-      for (const attribute in merged) {
-        updateProp(node, attribute, merged[attribute], namespace)
-      }
-    })
+      onNextFrame(() => {
+        // eslint-disable-next-line guard-for-in
+        for (const attribute in merged) {
+          updateProp(node, attribute, merged[attribute], namespace)
+        }
+      })
+    }
 
     return node
   }

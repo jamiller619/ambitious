@@ -1,6 +1,10 @@
 import { freeze } from './utils/shared'
+import HostComponentBody from './components/HostComponent'
+import CompoundComponentBody from './components/CompoundComponent'
+import FragmentComponentBody from './components/FragmentComponent'
+import COMPONENT_TYPE from './components/types'
 
-export const extend = Base => {
+const extend = Base => {
   const Component = {
     ...Base.extends,
     ...Base
@@ -28,4 +32,16 @@ export const extend = Base => {
   }
 
   return AmbitiousComponent
+}
+
+const HostComponent = extend(HostComponentBody)
+const CompoundComponent = extend(CompoundComponentBody)
+const FragmentComponent = extend(FragmentComponentBody)
+
+export const createComponent = element => {
+  return new (typeof element.type === 'function'
+    ? CompoundComponent
+    : element.type === COMPONENT_TYPE.FRAGMENT_COMPONENT
+    ? FragmentComponent
+    : HostComponent)(element)
 }

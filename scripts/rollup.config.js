@@ -5,26 +5,41 @@ import cleanup from 'rollup-plugin-cleanup'
 import commonjs from 'rollup-plugin-commonjs'
 import filesize from 'rollup-plugin-filesize'
 
-export default {
+const defs = {
   // eslint-disable-next-line no-undef
   input: process.env.npm_package_main,
   output: {
-    file: './dist/ambitious/ambitious.js',
-    format: 'cjs',
     interop: false,
     sourcemap: true
   },
   plugins: [
     resolve({
-      jsnext: true,
       browser: true
     }),
     babel({
       exclude: 'node_modules/**'
     }),
-    commonjs(),
     cleanup(),
-    // minify(),
     filesize()
   ]
 }
+
+export default [
+  {
+    ...defs,
+    output: {
+      ...defs.output,
+      format: 'esm',
+      file: './dist/ambitious/ambitious.js'
+    }
+  },
+  {
+    ...defs,
+    output: {
+      ...defs.output,
+      format: 'cjs',
+      file: './dist/ambitious/ambitious.min.js'
+    },
+    plugins: [...defs.plugins, commonjs(), minify()]
+  }
+]

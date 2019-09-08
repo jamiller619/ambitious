@@ -1,13 +1,11 @@
-import { isArray, onNextFrame } from '../utils/shared'
-import COMPONENT_TYPE from './type'
+import COMPONENT_TYPE from './types'
 import { areElementsEqual } from '../AmbitiousElement'
 import reconciler from '../reconciler'
-import createComponent from './createComponent'
+import { createComponent } from '../AmbitiousComponent'
 import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
 import { Store } from './Store'
 import { Hooks } from './Hooks'
 
-// eslint-disable-next-line max-lines-per-function
 export default {
   $$typeof: COMPONENT_TYPE.COMPOUND_COMPONENT,
 
@@ -21,19 +19,22 @@ export default {
   },
 
   renderInstance (element) {
-    return new Promise(resolve => {
-      const renderedElement = this.renderElement(element)
+    const renderedElement = this.renderElement(element)
 
-      if (renderedElement) {
-        if (this.instance) {
-          this.instance.update(renderedElement)
-        } else {
-          this.instance = createComponent(renderedElement)
-        }
+    const dispatchEffect = () =>
+      dispatchEffectHelper(this, EFFECT_TYPE.RESOLVED)
 
-        dispatchEffectHelper(this, EFFECT_TYPE.RESOLVED).then(resolve)
+    if (renderedElement) {
+      if (this.instance) {
+        return this.instance
+          .update(renderedElement)
+          .then(() => dispatchEffect())
       }
-    })
+
+      this.instance = createComponent(renderedElement)
+    }
+
+    return dispatchEffect()
   },
 
   getChildren () {
@@ -54,9 +55,6 @@ export default {
 
     const state = {
       ...this.store.state,
-      onUpdate: this.hooks
-        .registerEffect(EFFECT_TYPE.STATE_UPDATE)
-        .bind(this.hooks),
       setState: this.store.setState.bind(this.store)
     }
 
@@ -71,28 +69,20 @@ export default {
     return reconciler.replaceChild(this, newChild, lastInstance)
   },
 
-  // eslint-disable-next-line max-statements
   update (nextElement) {
-    return new Promise(resolve => {
-      const prevElement = this.element
+    const prevElement = this.element
 
-      if (areElementsEqual(prevElement, nextElement)) {
-        this.element = nextElement
-        this.renderInstance(nextElement).then(resolve)
-      } else {
-        this.parent
-          .replaceChild(createComponent(nextElement), this)
-          .then(resolve)
-      }
-    })
+    if (areElementsEqual(prevElement, nextElement)) {
+      this.element = nextElement
+
+      return this.renderInstance(nextElement)
+    }
+
+    return this.parent.replaceChild(createComponent(nextElement), this)
   },
 
   render (parent) {
     this.setParent(parent)
-
-    if (isArray(this.instance)) {
-      throw new Error('Ambitious doesn\'t yet support arrays being returned from Components.')
-    }
 
     return (this.instance && this.instance.render(this)) || null
   }

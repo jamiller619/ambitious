@@ -6,7 +6,6 @@
   "extends": ["eslint:recommended"],
   "parser": "babel-eslint",
   "parserOptions": {
-    "ecmaVersion": 2018,
     "sourceType": "module"
   },
   "rules": {
@@ -214,7 +213,7 @@
     "prefer-const": "error",
     "prefer-destructuring": "error",
     "prefer-numeric-literals": "error",
-    "prefer-object-spread": "error",
+    "prefer-object-spread": "off",
     "prefer-promise-reject-errors": "error",
     "prefer-reflect": "off",
     "prefer-rest-params": "error",

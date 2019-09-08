@@ -1,4 +1,4 @@
-import COMPONENT_TYPE from './type'
+import COMPONENT_TYPE from './types'
 import Queue from '../utils/Queue'
 import { updateChildren } from './updateChildren'
 import { areElementsEqual } from '../AmbitiousElement'
@@ -9,21 +9,20 @@ export default {
   extends: HostComponent,
 
   update (nextElement) {
-    return new Promise(resolve => {
-      const prevElement = this.element
+    const prevElement = this.element
 
-      this.element = nextElement
+    this.element = nextElement
 
-      if (areElementsEqual(prevElement, nextElement)) {
-        const queue = new Queue()
-        const childUpdates = updateChildren(this, nextElement)
+    if (areElementsEqual(prevElement, nextElement)) {
+      const queue = new Queue()
+      const childUpdates = updateChildren(this, nextElement)
 
-        queue.addTask(...childUpdates.tasks)
-        queue.flush().then(resolve)
-      } else {
-        this.parent.replaceChild(nextElement, this).then(resolve)
-      }
-    })
+      queue.addTask(...childUpdates.tasks)
+
+      return queue.flush()
+    }
+
+    return this.parent.replaceChild(nextElement, this)
   },
 
   render (parent) {

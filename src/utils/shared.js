@@ -5,15 +5,16 @@ const generateId = () =>
     .replace('0.', '')
 
 export const eventsKey = `$$events__${generateId()}`
+export const isPromise = obj => obj instanceof Promise
 
 export const onNextFrame = callback =>
   new Promise(resolve => {
-    window.requestAnimationFrame(async time => {
+    window.requestAnimationFrame(time => {
       if (typeof callback === 'function') {
-        await callback.call(callback, time)
-      }
+        const result = callback.call(callback, time)
 
-      resolve()
+        return isPromise(result) ? result : resolve()
+      }
     })
   })
 
