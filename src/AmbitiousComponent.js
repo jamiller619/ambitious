@@ -29,6 +29,7 @@ export const extend = Base => {
     setParent (parent) {
       if (parent && this.parent !== parent) {
         this.parent = parent
+        this.namespace = parent.namespace
       }
     }
   }

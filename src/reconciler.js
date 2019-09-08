@@ -164,7 +164,7 @@ const reconciler = {
     }
 
     component.namespace =
-      (parent && parent.namespace) ||
+      (parent && parent.namespace != null && parent.namespace) ||
       (element.props && element.props.xmlns) ||
       (element.type === 'svg' && 'http://www.w3.org/2000/svg') ||
       null
