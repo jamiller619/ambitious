@@ -34,13 +34,13 @@ const createCSSValueIterator = value => {
 }
 
 // eslint-disable-next-line max-lines-per-function, max-statements, complexity, max-params
-const updateProp = (node, key, value, namespace) => {
-  if (key.startsWith('on')) {
+const updateProp = (node, propName, value, namespace) => {
+  if (propName.startsWith('on')) {
     if (!node[eventsKey]) {
       node[eventsKey] = {}
     }
 
-    const name = key.slice(2).toLowerCase()
+    const name = propName.slice(2).toLowerCase()
     const isValueArray = isArray(value)
     const options = isValueArray ? value[1] : null
 
@@ -51,7 +51,7 @@ const updateProp = (node, key, value, namespace) => {
     }
 
     node[eventsKey][name] = isValueArray ? value[0] : value
-  } else if (key === 'style') {
+  } else if (propName === 'style') {
     if (typeof value === 'object') {
       Object.entries(value).forEach(([styleProp, styleValue]) => {
         if (node.style[styleProp] !== styleValue) {
@@ -61,7 +61,7 @@ const updateProp = (node, key, value, namespace) => {
     } else {
       node.style.cssText = value
     }
-  } else if (key === 'class' || key === 'className') {
+  } else if (propName === 'class' || propName === 'className') {
     const oldCssClasses = node.classList
     const newCssClasses = createCSSValueIterator(value)
 
@@ -84,10 +84,10 @@ const updateProp = (node, key, value, namespace) => {
         }
       })
     }
-  } else if (!reservedPropNames.includes(key)) {
+  } else if (!reservedPropNames.includes(propName)) {
     if (namespace) {
-      const name = key.replace(/^xlink:?/u, '')
-      const ns = namespace && key !== name
+      const name = propName.replace(/^xlink:?/u, '')
+      const ns = namespace && propName !== name
 
       if (ns) {
         if (isNullOrFalse(value)) {
@@ -110,37 +110,49 @@ const updateProp = (node, key, value, namespace) => {
         }
       }
     } else if (
-      key in node &&
-      !reservedAttributeNames.includes(key) &&
-      node[key] != value
+      propName in node &&
+      !reservedAttributeNames.includes(propName) &&
+      node[propName] != value
     ) {
-      node[key] = value == null ? '' : value === 'false' ? false : value
+      node[propName] = value == null ? '' : value === 'false' ? false : value
     }
   }
 }
 
-const waitForRenderedNode = node => {
-  return new Promise(resolve => {
-    const interval = window.setInterval(() => {
-      if (node && node.isConnected === true) {
-        window.clearInterval(interval)
-        resolve(node)
-      }
-    }, 20)
-  })
-}
+const reconciler = {
+  isRendered: component => {
+    const node = component.getNode()
 
-const renderer = {
-  isRendered: node => {
-    return node && node.isConnected
+    return (
+      node &&
+      (node.nodeType === 11 ? node.childElementCount === 0 : node.isConnected)
+    )
   },
 
-  whenRendered: async (node, callback) => {
-    if (!renderer.isRendered(node)) {
-      await waitForRenderedNode(node)
-    }
+  whenNodeAttached: (node, callback) => {
+    reconciler.waitForAttachedNode(node).then(callback)
+  },
 
-    return callback.call(callback, node)
+  waitForAttachedNode: component => {
+    return new Promise(resolve => {
+      if (reconciler.isRendered(component)) {
+        resolve(component.getNode())
+      }
+
+      const interval = window.setInterval(() => {
+        if (reconciler.isRendered(component)) {
+          window.clearInterval(interval)
+          resolve(component.getNode())
+        }
+      }, 20)
+
+      window.setTimeout(() => {
+        window.clearInterval(interval)
+        if (reconciler.isRendered(component)) {
+          resolve(component.getNode())
+        }
+      }, 500)
+    })
   },
 
   renderNode: component => {
@@ -152,12 +164,12 @@ const renderer = {
     }
 
     component.namespace =
-      (parent && parent.namespace) || (element.props && element.props.xmlns)
-    if (element.type === 'svg') {
-      component.namespace = 'http://www.w3.org/2000/svg'
-    }
+      (parent && parent.namespace) ||
+      (element.props && element.props.xmlns) ||
+      (element.type === 'svg' && 'http://www.w3.org/2000/svg') ||
+      null
 
-    return renderer.updateProps(
+    return reconciler.updateProps(
       component.namespace
         ? document.createElementNS(component.namespace, element.type)
         : document.createElement(element.type),
@@ -167,15 +179,15 @@ const renderer = {
     )
   },
 
-  async replaceChild (parentComponent, newChildComponent, oldChildComponent) {
+  replaceChild: async (
+    parentComponent,
+    newChildComponent,
+    oldChildComponent
+  ) => {
     await dispatchEffectHelper(oldChildComponent, EFFECT_TYPE.CLEANUP)
 
-    await onNextFrame(async () => {
+    await onNextFrame(() => {
       const oldNode = oldChildComponent.getNode()
-
-      if (!oldNode.parentNode) {
-        await waitForRenderedNode(oldNode)
-      }
 
       const newNode = newChildComponent.render(parentComponent)
 
@@ -249,4 +261,4 @@ const renderer = {
   }
 }
 
-export default renderer
+export default reconciler

@@ -9,11 +9,11 @@ import { freeze, areObjectsEqual } from '../utils/shared'
  */
 export function Store (initialState, updateHandler) {
   this.lastState = {}
-  this.updateHandler = updateHandler
+  this.handleUpdate = updateHandler
   this.state = freeze(initialState || {})
 }
 
-Store.prototype.setState = async function setState (partialStateOrCallback) {
+Store.prototype.setState = function setState (partialStateOrCallback) {
   const currentState = this.state
   const nextState =
     typeof partialStateOrCallback === 'function'
@@ -22,10 +22,12 @@ Store.prototype.setState = async function setState (partialStateOrCallback) {
 
   if (nextState !== currentState) {
     this.state = freeze(nextState)
-    await this.updateHandler(currentState, nextState)
+    this.lastState = currentState
+
+    return this.handleUpdate(currentState, nextState)
   }
 
-  return this.lastState = currentState
+  return null
 }
 
 Store.prototype.onUpdate = function onUpdate (callback) {

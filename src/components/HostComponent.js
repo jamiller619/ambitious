@@ -1,75 +1,72 @@
-import { COMPONENT_TYPE } from '../utils/shared'
-import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
-
-import renderer from '../renderer'
-import { extend } from './BaseComponent'
+import COMPONENT_TYPE from './type'
+import reconciler from '../reconciler'
 import createComponent from './createComponent'
 import Queue from '../utils/Queue'
 import { updateChildren } from './updateChildren'
 
-export default extend({
+// eslint-disable-next-line max-lines-per-function
+export default {
   $$typeof: COMPONENT_TYPE.HOST_COMPONENT,
 
   construct (element) {
     this.node = null
     this.namespace = null
-    this.renderedChildren = element.props
+    this.children = element.props
       ? element.props.children.map(createComponent)
       : []
+
+    return this
   },
 
   getChildren () {
-    return this.renderedChildren || []
+    return this.children || []
   },
 
   getNode () {
     return this.node
   },
 
-  getChildIndex (child) {
-    return this.renderedChildren.findIndex(c => c === child)
-  },
+  async replaceChild (newChild, oldChild) {
+    const oldChildIndex = this.children.findIndex(child => child === oldChild)
 
-  async replaceChild (newChild, oldChildIndex) {
-    const oldChild = this.renderedChildren[oldChildIndex]
+    await reconciler.replaceChild(this, newChild, oldChild)
 
-    await renderer.replaceChild(this, newChild, oldChild)
-
-    this.renderedChildren[oldChildIndex] = newChild
+    this.children[oldChildIndex] = newChild
   },
 
   async insertBefore (newChild, referenceIndex) {
-    const refChild = this.renderedChildren[referenceIndex]
+    const refChild = this.children[referenceIndex]
 
-    await renderer.insertBefore(this, newChild, refChild)
+    await reconciler.insertBefore(this, newChild, refChild)
 
-    this.renderedChildren.splice(referenceIndex, 0, newChild)
+    this.children.splice(referenceIndex, 0, newChild)
   },
 
   appendChild (newChild) {
-    this.renderedChildren.push(newChild)
+    this.children.push(newChild)
 
-    return renderer.appendChild(this, newChild)
+    return reconciler.appendChild(this, newChild)
   },
 
   async removeChild (oldChild) {
-    const oldChildIndex = this.renderedChildren.findIndex(child => child === oldChild)
+    const oldChildIndex = this.children.findIndex(child => child === oldChild)
 
-    await renderer.removeChild(this, oldChild)
+    await reconciler.removeChild(this, oldChild)
 
-    this.renderedChildren.splice(oldChildIndex, 1)
+    this.children.splice(oldChildIndex, 1)
   },
 
   // eslint-disable-next-line max-statements
   async update (nextElement) {
     const prevElement = this.element
     const queue = new Queue()
+    const node = this.getNode()
 
     this.element = nextElement
 
-    if (this.node.nodeType !== Node.TEXT_NODE) {
+    if (node && node.nodeType !== Node.TEXT_NODE) {
       queue.addTask(() => {
-        return renderer.updateProps(
+        return reconciler.updateProps(
           this.node,
           prevElement,
           this.element,
@@ -84,7 +81,7 @@ export default extend({
       }
     } else {
       queue.addTask(() => {
-        return renderer.replaceChild(
+        return reconciler.replaceChild(
           this.parent,
           createComponent(nextElement),
           this
@@ -98,17 +95,18 @@ export default extend({
   },
 
   render (parent) {
-    this.setParent(parent)
     const { element } = this
 
+    this.setParent(parent)
+
     if (typeof element !== 'object') {
-      return this.node = renderer.createTextNode(element)
+      return this.node = reconciler.createTextNode(element)
     }
 
-    this.node = renderer.renderNode(this)
+    this.node = reconciler.renderNode(this)
 
-    this.renderedChildren.forEach(child => renderer.appendChild(this, child))
+    this.children.forEach(child => reconciler.appendChild(this, child))
 
     return this.node
   }
-})
+}

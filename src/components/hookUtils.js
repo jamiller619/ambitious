@@ -1,4 +1,4 @@
-import renderer from '../renderer'
+import reconciler from '../reconciler'
 import { isArray } from 'util'
 
 export const EFFECT_TYPE = {
@@ -39,26 +39,40 @@ export const createEffect = (hook, type, handler, deps) => {
   }
 }
 
-const dispatchEffect = async (component, type, ...params) => {
-  if (component.hooks) {
-    const node = component.getNode()
+const dispatchEffect = (component, type, ...params) => {
+  return new Promise(resolve => {
+    if (component.hooks) {
+      const result = component.hooks.dispatchEffect(type, ...params)
 
-    await renderer.whenRendered(node, () => {
-      return component.hooks.dispatchEffect(type, [node, ...params])
-    })
-  } else {
-    return null
-  }
+      resolve(result)
+    } else {
+      resolve()
+    }
+  })
 }
 
-const dispatchAllEffects = async (component, type, ...params) => {
-  const children = component.getChildren()
+const dispatchChildEffects = (component, type, ...params) => {
+  return Promise.all(component.getChildren().map(child => dispatchEffect(child, type, ...params)))
+}
 
-  await Promise.all(children.map(child => dispatchAllEffects(child, type, ...params)))
+const dispatchAllEffects = (component, type, ...params) => {
+  return new Promise(resolve => {
+    const dispatch = node => {
+      dispatchChildEffects(component, type, [node, ...params]).then(() => {
+        dispatchEffect(component, type, [node, ...params]).then(resolve)
+      })
+    }
 
-  return dispatchEffect(component, type, ...params)
+    if (type === EFFECT_TYPE.RESOLVED) {
+      reconciler.whenNodeAttached(component, dispatch)
+    } else {
+      dispatch(component.getNode())
+    }
+  })
 }
 
 export const dispatchEffectHelper = (component, type, ...params) => {
-  return dispatchAllEffects(component, type, ...params)
+  return new Promise(resolve => {
+    dispatchAllEffects(component, type, ...params).then(resolve)
+  })
 }

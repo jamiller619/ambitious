@@ -1,5 +1,5 @@
 /* eslint-disable max-depth */
-import { areElementsEqual } from '../utils/shared'
+import { areElementsEqual } from '../AmbitiousElement'
 import createComponent from './createComponent'
 import Queue from '../utils/Queue'
 
@@ -13,7 +13,7 @@ const enqueueInsertBefore = (queue, component, index, nextElement) => {
 // eslint-disable-next-line max-lines-per-function, max-statements
 export const updateChildren = (currentComponent, nextElement) => {
   const queue = new Queue()
-  const currentComponentChildren = currentComponent.renderedChildren
+  const currentComponentChildren = currentComponent.getChildren()
 
   if (nextElement == null) {
     queue.addTask(() => currentComponent.parent.removeChild(currentComponent))

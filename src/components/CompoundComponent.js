@@ -1,40 +1,39 @@
-import {
-  areElementsEqual,
-  isArray,
-  COMPONENT_TYPE,
-  onNextFrame
-} from '../utils/shared'
-import renderer from '../renderer'
-import { extend } from './BaseComponent'
+import { isArray, onNextFrame } from '../utils/shared'
+import COMPONENT_TYPE from './type'
+import { areElementsEqual } from '../AmbitiousElement'
+import reconciler from '../reconciler'
 import createComponent from './createComponent'
 import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
 import { Store } from './Store'
 import { Hooks } from './Hooks'
 
-// eslint-disable-next-line require-jsdoc
-function stateUpdateHandler (component) {
-  return async function handleStateUpdate (oldState, newState) {
-    if (component.instance) {
-      await component.instance.update(component.renderInstance(component.element))
-
-      component.hooks.dispatchEffect(EFFECT_TYPE.STATE_UPDATE, {
-        data: [oldState, newState]
-      })
-    }
-  }
-}
-
-export default extend({
+// eslint-disable-next-line max-lines-per-function
+export default {
   $$typeof: COMPONENT_TYPE.COMPOUND_COMPONENT,
 
   construct (element) {
     this.name = element.type.name
     this.hooks = new Hooks(this.name)
-    this.store = new Store(element.type.defaultState, stateUpdateHandler(this))
+    this.store = new Store(element.type.defaultState, (lastState, state) =>
+      this.renderInstance(this.element))
 
-    const instance = this.renderInstance(element)
+    this.renderInstance(element)
+  },
 
-    this.instance = (instance && createComponent(instance)) || null
+  renderInstance (element) {
+    return new Promise(resolve => {
+      const renderedElement = this.renderElement(element)
+
+      if (renderedElement) {
+        if (this.instance) {
+          this.instance.update(renderedElement)
+        } else {
+          this.instance = createComponent(renderedElement)
+        }
+
+        dispatchEffectHelper(this, EFFECT_TYPE.RESOLVED).then(resolve)
+      }
+    })
   },
 
   getChildren () {
@@ -45,11 +44,7 @@ export default extend({
     return (this.instance && this.instance.getNode()) || null
   },
 
-  getChildIndex () {
-    return 0
-  },
-
-  renderInstance (element) {
+  renderElement (element) {
     const props = {
       ...element.props,
       useEffect: this.hooks
@@ -65,45 +60,31 @@ export default extend({
       setState: this.store.setState.bind(this.store)
     }
 
-    const instance = element.type.call(element.type, props, state)
-
-    if (instance) {
-      onNextFrame(() => dispatchEffectHelper(this, EFFECT_TYPE.RESOLVED))
-    }
-
-    return instance
-  },
-
-  removeChild (child) {
-    return renderer.removeChild(this, child)
+    return element.type.call(element.type, props, state)
   },
 
   replaceChild (newChild) {
-    return renderer.replaceChild(this, newChild, this.instance)
+    const lastInstance = this.instance
+
+    this.instance = newChild
+
+    return reconciler.replaceChild(this, newChild, lastInstance)
   },
 
   // eslint-disable-next-line max-statements
-  async update (nextElement) {
-    const prevElement = this.element
+  update (nextElement) {
+    return new Promise(resolve => {
+      const prevElement = this.element
 
-    if (areElementsEqual(prevElement, nextElement)) {
-      this.element = nextElement
-      const nextInstance = this.renderInstance(nextElement)
-
-      if (nextInstance) {
-        if (this.instance) {
-          await this.instance.update(nextInstance)
-        } else {
-          this.instance = nextInstance
-        }
+      if (areElementsEqual(prevElement, nextElement)) {
+        this.element = nextElement
+        this.renderInstance(nextElement).then(resolve)
+      } else {
+        this.parent
+          .replaceChild(createComponent(nextElement), this)
+          .then(resolve)
       }
-    } else {
-      const index = this.parent.getChildIndex(this)
-
-      await this.parent.replaceChild(createComponent(nextElement), index)
-    }
-
-    return this
+    })
   },
 
   render (parent) {
@@ -115,4 +96,4 @@ export default extend({
 
     return (this.instance && this.instance.render(this)) || null
   }
-})
+}

@@ -1,10 +1,3 @@
-export const AMBITIOUS_ELEMENT = Symbol('ambitious.element')
-
-export const COMPONENT_TYPE = {
-  HOST_COMPONENT: 0,
-  COMPOUND_COMPONENT: 1
-}
-
 // simple random id generator
 const generateId = () =>
   Math.random()
@@ -31,10 +24,6 @@ export const flatten = arr =>
     (acc, val) => isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
     []
   )
-
-export const areElementsEqual = (a, b) => {
-  return a.key === b.key && a.type === b.type
-}
 
 // eslint-disable-next-line max-statements
 export const areObjectsEqual = (a, b) => {
