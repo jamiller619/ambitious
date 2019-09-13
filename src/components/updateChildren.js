@@ -46,7 +46,9 @@ export const updateChildren = (currentComponent, nextElement) => {
       }
     } else {
       const currentChildMatch = currentComponentChildren.find(child =>
-        areElementsEqual(child.element, nextElementChild))
+        areElementsEqual(child.element, nextElementChild, {
+          ignoreOrder: true
+        }))
 
       if (currentChildMatch) {
         currentChildMatch.update(nextElementChild)
@@ -54,10 +56,10 @@ export const updateChildren = (currentComponent, nextElement) => {
         const currentComponentChild = currentComponentChildren[i]
 
         if (currentComponentChild) {
-          const nextElementChildMatch = nextElementChildren
-            .slice(i)
-            .find(child =>
-              areElementsEqual(child, currentComponentChild.element))
+          const nextElementChildMatch = nextElementChildren.find(child =>
+            areElementsEqual(child, currentComponentChild.element, {
+              ignoreOrder: true
+            }))
 
           if (nextElementChildMatch) {
             enqueueInsertBefore(
