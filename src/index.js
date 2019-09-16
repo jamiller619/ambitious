@@ -1,17 +1,13 @@
-import createElement from './createElement'
-import createComponent from './components/createComponent'
+import { createElement } from './AmbitiousElement'
+import render from './render'
+import COMPONENT_TYPE from './components/types'
 
-const render = (element, parentNode, component) => {
-  if (component) {
-    return component.update(element)
-  }
-
-  return Promise.resolve(createComponent(element).mount(parentNode))
-}
+const Fragment = COMPONENT_TYPE.FRAGMENT_COMPONENT
 
 const ambitious = {
   createElement,
-  render
+  render,
+  Fragment
 }
 
-export { ambitious as default, render }
+export { ambitious as default, render, Fragment }

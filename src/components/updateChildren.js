@@ -1,19 +1,17 @@
 /* eslint-disable max-depth */
-import { areElementsEqual } from '../utils/shared'
-import createComponent from './createComponent'
+import { areElementsEqual } from '../AmbitiousElement'
+import { createComponent } from '../AmbitiousComponent'
 import Queue from '../utils/Queue'
 
 // eslint-disable-next-line max-params
-const enqueueInsertBefore = (queue, component, index, nextElement) => {
-  return queue.addTask(() => {
-    return component.insertBefore(createComponent(nextElement), index)
-  })
-}
+const enqueueInsertBefore = (queue, component, index, nextElement) =>
+  queue.addTask(() =>
+    component.insertBefore(createComponent(nextElement), index))
 
 // eslint-disable-next-line max-lines-per-function, max-statements
 export const updateChildren = (currentComponent, nextElement) => {
   const queue = new Queue()
-  const currentComponentChildren = currentComponent.renderedChildren
+  const currentComponentChildren = currentComponent.getChildren()
 
   if (nextElement == null) {
     queue.addTask(() => currentComponent.parent.removeChild(currentComponent))
@@ -48,7 +46,9 @@ export const updateChildren = (currentComponent, nextElement) => {
       }
     } else {
       const currentChildMatch = currentComponentChildren.find(child =>
-        areElementsEqual(child.element, nextElementChild))
+        areElementsEqual(child.element, nextElementChild, {
+          ignoreOrder: true
+        }))
 
       if (currentChildMatch) {
         currentChildMatch.update(nextElementChild)
@@ -56,10 +56,10 @@ export const updateChildren = (currentComponent, nextElement) => {
         const currentComponentChild = currentComponentChildren[i]
 
         if (currentComponentChild) {
-          const nextElementChildMatch = nextElementChildren
-            .slice(i)
-            .find(child =>
-              areElementsEqual(child, currentComponentChild.element))
+          const nextElementChildMatch = nextElementChildren.find(child =>
+            areElementsEqual(child, currentComponentChild.element, {
+              ignoreOrder: true
+            }))
 
           if (nextElementChildMatch) {
             enqueueInsertBefore(
@@ -72,9 +72,8 @@ export const updateChildren = (currentComponent, nextElement) => {
             currentComponentChild.update(nextElementChild)
           }
         } else {
-          queue.addTask(() => {
-            return currentComponent.appendChild(createComponent(nextElementChild))
-          })
+          queue.addTask(() =>
+            currentComponent.appendChild(createComponent(nextElementChild)))
         }
       }
     }

@@ -1,6 +1,6 @@
 {
   "name": "ambitious",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "src/index.js",
   "author": {
     "name": "Jeff Miller",
@@ -14,7 +14,7 @@
     "build": "BABEL_ENV=build rollup -c scripts/rollup.config.js && node scripts/create-packages.js",
     "dev": "BABEL_ENV=build rollup -c scripts/rollup.config.js -w",
     "version": "npm version patch",
-    "pub": "yarn build && npm publish",
+    "pubish": "npm publish",
     "lint": "prettier --write src/**/*.js && eslint src/**",
     "test": "BABEL_ENV=test jest --verbose --watch --runInBand",
     "coverage": "BABEL_ENV=test jest --coverage"

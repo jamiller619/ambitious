@@ -1,75 +1,71 @@
-import { COMPONENT_TYPE } from '../utils/shared'
-import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
-
-import renderer from '../renderer'
-import { extend } from './BaseComponent'
-import createComponent from './createComponent'
+import COMPONENT_TYPE from './types'
+import reconciler from '../reconciler'
+import { createComponent } from '../AmbitiousComponent'
 import Queue from '../utils/Queue'
 import { updateChildren } from './updateChildren'
+import { areElementsEqual } from '../AmbitiousElement'
 
-export default extend({
+export default {
   $$typeof: COMPONENT_TYPE.HOST_COMPONENT,
 
   construct (element) {
     this.node = null
     this.namespace = null
-    this.renderedChildren = element.props
+    this.children = element.props
       ? element.props.children.map(createComponent)
       : []
+
+    return this
   },
 
   getChildren () {
-    return this.renderedChildren || []
+    return this.children || []
   },
 
   getNode () {
     return this.node
   },
 
-  getChildIndex (child) {
-    return this.renderedChildren.findIndex(c => c === child)
+  replaceChild (newChild, oldChild) {
+    const oldChildIndex = this.children.findIndex(child => child === oldChild)
+
+    this.children[oldChildIndex] = newChild
+
+    return reconciler.replaceChild(this, newChild, oldChild)
   },
 
-  async replaceChild (newChild, oldChildIndex) {
-    const oldChild = this.renderedChildren[oldChildIndex]
+  insertBefore (newChild, referenceIndex) {
+    const refChild = this.children[referenceIndex]
 
-    await renderer.replaceChild(this, newChild, oldChild)
+    this.children.splice(referenceIndex, 0, newChild)
 
-    this.renderedChildren[oldChildIndex] = newChild
-  },
-
-  async insertBefore (newChild, referenceIndex) {
-    const refChild = this.renderedChildren[referenceIndex]
-
-    await renderer.insertBefore(this, newChild, refChild)
-
-    this.renderedChildren.splice(referenceIndex, 0, newChild)
+    return reconciler.insertBefore(this, newChild, refChild)
   },
 
   appendChild (newChild) {
-    this.renderedChildren.push(newChild)
+    this.children.push(newChild)
 
-    return renderer.appendChild(this, newChild)
+    return reconciler.appendChild(this, newChild)
   },
 
-  async removeChild (oldChild) {
-    const oldChildIndex = this.renderedChildren.findIndex(child => child === oldChild)
+  removeChild (oldChild) {
+    const oldChildIndex = this.children.findIndex(child => child === oldChild)
 
-    await renderer.removeChild(this, oldChild)
+    this.children.splice(oldChildIndex, 1)
 
-    this.renderedChildren.splice(oldChildIndex, 1)
+    return reconciler.removeChild(this, oldChild)
   },
 
   // eslint-disable-next-line max-statements
-  async update (nextElement) {
+  update (nextElement) {
     const prevElement = this.element
     const queue = new Queue()
 
     this.element = nextElement
 
-    if (this.node.nodeType !== Node.TEXT_NODE) {
+    if (areElementsEqual(prevElement, nextElement)) {
       queue.addTask(() => {
-        return renderer.updateProps(
+        reconciler.updateProps(
           this.node,
           prevElement,
           this.element,
@@ -83,32 +79,26 @@ export default extend({
         queue.addTask(...childUpdates.tasks)
       }
     } else {
-      queue.addTask(() => {
-        return renderer.replaceChild(
-          this.parent,
-          createComponent(nextElement),
-          this
-        )
-      })
+      queue.addTask(() =>
+        reconciler.replaceChild(this.parent, createComponent(nextElement), this))
     }
 
-    await queue.flush()
-
-    return this
+    return queue.flush()
   },
 
   render (parent) {
-    this.setParent(parent)
     const { element } = this
 
+    this.setParent(parent)
+
     if (typeof element !== 'object') {
-      return this.node = renderer.createTextNode(element)
+      return this.node = reconciler.createTextNode(element)
     }
 
-    this.node = renderer.renderNode(this)
+    this.node = reconciler.renderNode(this)
 
-    this.renderedChildren.forEach(child => renderer.appendChild(this, child))
+    this.children.forEach(child => reconciler.appendChild(this, child))
 
     return this.node
   }
-})
+}

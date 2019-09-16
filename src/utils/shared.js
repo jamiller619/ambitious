@@ -1,10 +1,3 @@
-export const AMBITIOUS_ELEMENT = Symbol('ambitious.element')
-
-export const COMPONENT_TYPE = {
-  HOST_COMPONENT: 0,
-  COMPOUND_COMPONENT: 1
-}
-
 // simple random id generator
 const generateId = () =>
   Math.random()
@@ -12,15 +5,16 @@ const generateId = () =>
     .replace('0.', '')
 
 export const eventsKey = `$$events__${generateId()}`
+export const isPromise = obj => obj instanceof Promise
 
 export const onNextFrame = callback =>
   new Promise(resolve => {
-    window.requestAnimationFrame(async time => {
+    window.requestAnimationFrame(time => {
       if (typeof callback === 'function') {
-        await callback.call(callback, time)
-      }
+        const result = callback.call(callback, time)
 
-      resolve()
+        return isPromise(result) ? result : resolve()
+      }
     })
   })
 
@@ -48,10 +42,6 @@ export const flatten = arr =>
     (acc, val) => isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
     []
   )
-
-export const areElementsEqual = (a, b) => {
-  return a.key === b.key && a.type === b.type
-}
 
 // eslint-disable-next-line max-statements
 export const areObjectsEqual = (a, b) => {

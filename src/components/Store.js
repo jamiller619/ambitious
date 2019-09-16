@@ -1,4 +1,4 @@
-import { freeze, areObjectsEqual } from '../utils/shared'
+import { freeze } from '../utils/shared'
 
 /**
  * The Store object is responsible for handling state
@@ -9,27 +9,26 @@ import { freeze, areObjectsEqual } from '../utils/shared'
  */
 export function Store (initialState, updateHandler) {
   this.lastState = {}
-  this.updateHandler = updateHandler
+  this.handleUpdate = updateHandler
   this.state = freeze(initialState || {})
 }
 
-Store.prototype.setState = async function setState (partialStateOrCallback) {
+Store.prototype.setState = function setState (partialStateOrCallback) {
   const currentState = this.state
-  const nextState =
-    typeof partialStateOrCallback === 'function'
-      ? { ...currentState, ...partialStateOrCallback(currentState) }
-      : { ...currentState, ...partialStateOrCallback }
+  const nextState = Object.assign(
+    {},
+    currentState,
+    partialStateOrCallback === 'function'
+      ? partialStateOrCallback(currentState)
+      : partialStateOrCallback
+  )
 
   if (nextState !== currentState) {
     this.state = freeze(nextState)
-    await this.updateHandler(currentState, nextState)
+    this.lastState = currentState
+
+    return this.handleUpdate(currentState, nextState)
   }
 
-  return this.lastState = currentState
-}
-
-Store.prototype.onUpdate = function onUpdate (callback) {
-  if (!areObjectsEqual(this.lastState, this.state)) {
-    callback.call(callback, this.lastState, this.state)
-  }
+  return Promise.resolve()
 }
