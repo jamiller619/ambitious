@@ -24,6 +24,23 @@ export const onNextFrame = callback =>
     })
   })
 
+// eslint-disable-next-line require-jsdoc
+export function memo (fn) {
+  let retval = false
+
+  let called = false
+
+  return function memoize (...args) {
+    if (!called) {
+      called = true
+      // eslint-disable-next-line no-invalid-this
+      retval = fn.apply(this, ...args)
+    }
+
+    return retval
+  }
+}
+
 export const freeze = Object.freeze ? obj => Object.freeze(obj) : obj => obj
 export const { isArray } = Array
 export const flatten = arr =>
