@@ -116,6 +116,8 @@ const updateProp = (node, propName, value, namespace) => {
       node[propName] != value
     ) {
       node[propName] = value == null ? '' : value === 'false' ? false : value
+    } else if (propName.startsWith('data-')) {
+      node.dataset[propName.substring(5)] = value
     }
   }
 }
