@@ -15,7 +15,7 @@ const attach = (Component, callback) => {
   })
 }
 
-test('Render a simple app', () => {
+test('render a simple component', () => {
   const App = () => {
     return (
       <div id="app" class="style">
@@ -29,7 +29,39 @@ test('Render a simple app', () => {
   })
 })
 
-test('Array as class prop', () => {
+test('render an element', () => {
+  const app = (
+    <div id="app" class="style">
+      <h1>sup</h1>
+    </div>
+  )
+
+  return attach(app, html => {
+    expect(html).toEqual('<div id="app" class="style"><h1>sup</h1></div>')
+  })
+})
+
+test('skip invalid null and Boolean children', () => {
+  const App = ({ children }) => {
+    return (
+      <div id="app" class="style">
+        {children}
+      </div>
+    )
+  }
+
+  return attach(
+    <App>
+      {null}
+      {false}
+    </App>,
+    html => {
+      expect(html).toEqual('<div id="app" class="style"></div>')
+    }
+  )
+})
+
+test('array as class prop', () => {
   const App = () => {
     return (
       <div class={['classOne', 'classTwo']}>
@@ -43,7 +75,21 @@ test('Array as class prop', () => {
   })
 })
 
-test('Simple app with props', () => {
+test('apply correct HTML attributes', () => {
+  const App = () => {
+    return (
+      <div data-test="testing" this-should-not-work="true">
+        <h1>sup</h1>
+      </div>
+    )
+  }
+
+  return attach(<App />, html => {
+    expect(html).toEqual('<div data-test="testing"><h1>sup</h1></div>')
+  })
+})
+
+test('simple app with props', () => {
   const App = props => {
     return (
       <div {...props}>
@@ -57,7 +103,30 @@ test('Simple app with props', () => {
   })
 })
 
-test('Simple app with props and children', () => {
+test('style object', () => {
+  const App = () => {
+    return (
+      <div
+        style={{
+          backgroundColor: 'blue',
+          height: '25px',
+          width: '100px',
+          color: 'white'
+        }}
+      >
+        <h1>sup</h1>
+      </div>
+    )
+  }
+
+  return attach(<App />, html => {
+    expect(html).toEqual(
+      '<div style="background-color: blue; height: 25px; width: 100px; color: white;"><h1>sup</h1></div>'
+    )
+  })
+})
+
+test('simple app with props and children', () => {
   const App = ({ id, children }) => {
     return <div id={id}>{children}</div>
   }
@@ -72,7 +141,7 @@ test('Simple app with props and children', () => {
   )
 })
 
-test('Simple SVG app', () => {
+test('simple SVG app', () => {
   const App = () => {
     return (
       <svg id="svg">
