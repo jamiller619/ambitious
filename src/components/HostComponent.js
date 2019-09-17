@@ -53,7 +53,7 @@ export default {
 
     this.children.splice(oldChildIndex, 1)
 
-    return reconciler.removeChild(this, oldChild)
+    return reconciler.removeChild(oldChild)
   },
 
   // eslint-disable-next-line max-statements

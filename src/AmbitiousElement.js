@@ -32,6 +32,10 @@ const assignIndex = (element, index) => {
 }
 
 export const areElementsEqual = (a, b, { ignoreOrder = false } = {}) => {
+  if (typeof a !== 'object' || typeof b !== 'object') {
+    return a === b
+  }
+
   if (a.type !== b.type) {
     return false
   }
@@ -39,9 +43,9 @@ export const areElementsEqual = (a, b, { ignoreOrder = false } = {}) => {
   if (a.key || b.key) return a.key === b.key
   if (a.namespace || b.namespace) return a.namespace === b.namespace
 
-  if (ignoreOrder === false && a.index === b.index) return true
+  if (ignoreOrder === false) return a.index === b.index
 
-  return false
+  return true
 }
 
 export const createElement = (type, config, ...children) => {

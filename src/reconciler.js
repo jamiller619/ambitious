@@ -120,6 +120,12 @@ const updateProp = (node, propName, value, namespace) => {
   }
 }
 
+const checkRender = (component, resolve) => {
+  if (reconciler.isRendered(component)) {
+    resolve(component.getNode())
+  }
+}
+
 const reconciler = {
   isRendered: component => {
     const node = component.getNode()
@@ -135,9 +141,7 @@ const reconciler = {
 
   waitForAttachedNode: component => {
     return new Promise(resolve => {
-      if (reconciler.isRendered(component)) {
-        resolve(component.getNode())
-      }
+      checkRender(component, resolve)
 
       const interval = window.setInterval(() => {
         if (reconciler.isRendered(component)) {
@@ -148,9 +152,7 @@ const reconciler = {
 
       window.setTimeout(() => {
         window.clearInterval(interval)
-        if (reconciler.isRendered(component)) {
-          resolve(component.getNode())
-        }
+        checkRender(component, resolve)
       }, 500)
     })
   },
@@ -203,26 +205,27 @@ const reconciler = {
     }).then(() => dispatchEffectHelper(childComponent, EFFECT_TYPE.RESOLVED))
   },
 
-  removeChild: (parentComponent, childComponent) => {
-    return dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP).then(() =>
-      onNextFrame(() => {
-        const parentNode = parentComponent.getNode()
-        const childNode = childComponent.getNode()
-
-        if (childNode.isConnected && parentNode === childNode.parentNode) {
-          parentNode.removeChild(childNode)
-        }
-      }))
+  removeChild: childComponent => {
+    return dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP)
+      .then(() => reconciler.waitForAttachedNode(childComponent))
+      .then(childNode =>
+        onNextFrame(() => childNode.parentNode.removeChild(childNode)))
   },
 
   insertBefore: (parentComponent, newChildComponent, referenceComponent) => {
     return onNextFrame(() => {
       const newNode = newChildComponent.render(parentComponent)
-      const refNode = referenceComponent.getNode()
-      const parentNode = parentComponent.getNode()
 
-      parentNode.insertBefore(newNode, refNode)
+      if (newNode) {
+        const refNode = referenceComponent.getNode()
+
+        refNode.parentNode.insertBefore(newNode, refNode)
+      }
     }).then(() => dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED))
+  },
+
+  updateTextNode: (component, textContent) => {
+    component.getNode().textContent = component.element = textContent
   },
 
   createTextNode: text => document.createTextNode(text),

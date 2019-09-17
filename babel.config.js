@@ -1,4 +1,7 @@
 module.exports = {
+  comments: false,
+  compact: true,
+  minified: true,
   presets: [
     [
       '@babel/preset-env',
@@ -8,17 +11,14 @@ module.exports = {
         }
       }
     ]
+  ],
+  plugins: [
+    [
+      '@babel/plugin-transform-react-jsx',
+      {
+        pragma: 'ambitious.createElement',
+        pragmaFrag: 'ambitious.Fragment'
+      }
+    ]
   ]
-  // plugins: [
-  //   [
-  //     '@babel/plugin-transform-runtime',
-  //     {
-  //       absoluteRuntime: false,
-  //       corejs: false,
-  //       helpers: true,
-  //       regenerator: true,
-  //       useESModules: false
-  //     }
-  //   ]
-  // ]
 }

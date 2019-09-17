@@ -23,11 +23,9 @@ export const createEffect = (hook, type, handler, deps) => {
 }
 
 const dispatchEffect = (component, type, ...params) => {
-  if (component.hooks) {
-    return component.hooks.dispatchEffect(type, ...params)
-  }
-
-  return Promise.resolve()
+  return component.hooks
+    ? component.hooks.dispatchEffect(type, ...params)
+    : Promise.resolve()
 }
 
 export const dispatchEffectHelper = (component, type, ...params) => {

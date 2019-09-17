@@ -11,21 +11,23 @@
   "repository": "https://github.com/jamiller619/ambitious.git",
   "license": "MIT",
   "scripts": {
-    "build": "BABEL_ENV=build rollup -c scripts/rollup.config.js && node scripts/create-packages.js",
-    "dev": "BABEL_ENV=build rollup -c scripts/rollup.config.js -w",
+    "build": "rollup -c scripts/rollup.config.js && node scripts/create-packages.js",
+    "dev": "rollup -c scripts/rollup.config.js -w",
     "version": "npm version patch",
     "pubish": "npm publish",
-    "lint": "prettier --write src/**/*.js && eslint src/**",
-    "test": "BABEL_ENV=test jest --verbose --watch --runInBand",
-    "coverage": "BABEL_ENV=test jest --coverage"
+    "test": "jest --config ./test/jest.config.js --verbose --watch --runInBand",
+    "coverage": "jest --coverage"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
+    "@babel/plugin-transform-react-jsx": "^7.3.0",
     "@babel/plugin-transform-runtime": "^7.4.4",
     "@babel/preset-env": "^7.4.5",
     "babel-eslint": "^10.0.2",
+    "babel-jest": "^24.9.0",
     "eslint": "^5.16.0",
     "eslint-plugin-babel": "^5.3.0",
+    "eslint-plugin-jest": "^22.17.0",
     "fs-extra": "^8.0.1",
     "jest": "^24.8.0",
     "prettier": "^1.18.2",

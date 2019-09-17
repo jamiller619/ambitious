@@ -26,9 +26,7 @@ export default {
 
     if (renderedElement) {
       if (this.instance) {
-        return this.instance
-          .update(renderedElement)
-          .then(() => dispatchEffect())
+        return this.instance.update(renderedElement).then(dispatchEffect)
       }
 
       this.instance = createComponent(renderedElement)
@@ -59,6 +57,10 @@ export default {
     }
 
     return element.type.call(element.type, props, state)
+  },
+
+  removeChild () {
+    return this.parent.removeChild(this)
   },
 
   replaceChild (newChild) {
