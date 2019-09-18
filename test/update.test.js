@@ -2,6 +2,8 @@ import ambitious, { Fragment } from '../src'
 import { attach, wait, awaitUpdate } from './utils'
 
 test('simple update', () => {
+  expect.assertions(1)
+
   const App = (_, { count, setState }) => {
     const handleClick = () => {
       setState({
@@ -16,9 +18,9 @@ test('simple update', () => {
     count: 0
   }
 
-  return attach(<App />, (html, dom) => {
+  return attach(<App />).then(({ html, dom }) => {
     dom.click()
-    awaitUpdate(() => expect(html).toEqual('<div>1</div>'))
+    return awaitUpdate(() => expect(html).toEqual('<div>1</div>'))
   })
 })
 
@@ -56,7 +58,7 @@ test('keyed update and rearrange', () => {
     ]
   }
 
-  return attach(<App />, (html, dom) => {
+  return attach(<App />).then(({ html, dom }) => {
     const firstChild = dom.firstChild
     const secondChild = dom.children[1]
     const lastChild = dom.lastChild
@@ -70,8 +72,6 @@ test('keyed update and rearrange', () => {
     })
   })
 })
-
-let clickCounter = 0
 
 test('update with new child', () => {
   const Counter = ({ count }) => {
@@ -97,7 +97,7 @@ test('update with new child', () => {
     count: 0
   }
 
-  return attach(<App />, (html, dom) => {
+  return attach(<App />).then(({ html, dom }) => {
     dom.click()
 
     return awaitUpdate(() =>

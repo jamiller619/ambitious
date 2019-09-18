@@ -22,7 +22,11 @@ export const attach = Component => {
   return new Promise(resolve => {
     setTimeout(() => {
       const dom = document.body.firstChild
-      resolve(dom.innerHTML.toString(), dom, Component)
+      resolve({
+        html: dom.innerHTML.toString(),
+        dom,
+        Component
+      })
     }, 50)
   })
 }
