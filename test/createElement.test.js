@@ -10,7 +10,7 @@ test('render a simple component', () => {
     )
   }
 
-  return attach(<App />, html => {
+  return attach(<App />).then(html => {
     expect(html).toEqual('<div id="app" class="style"><h1>sup</h1></div>')
   })
 })
@@ -22,7 +22,7 @@ test('render an element', () => {
     </div>
   )
 
-  return attach(app, html => {
+  return attach(app).then(html => {
     expect(html).toEqual('<div id="app" class="style"><h1>sup</h1></div>')
   })
 })
@@ -40,11 +40,10 @@ test('skip invalid null and Boolean children', () => {
     <App>
       {null}
       {false}
-    </App>,
-    html => {
-      expect(html).toEqual('<div id="app" class="style"></div>')
-    }
-  )
+    </App>
+  ).then(html => {
+    expect(html).toEqual('<div id="app" class="style"></div>')
+  })
 })
 
 test('array as class prop', () => {
@@ -56,7 +55,7 @@ test('array as class prop', () => {
     )
   }
 
-  return attach(<App />, html => {
+  return attach(<App />).then(html => {
     expect(html).toEqual('<div class="classOne classTwo"><h1>sup</h1></div>')
   })
 })
@@ -70,7 +69,7 @@ test('apply correct HTML attributes', () => {
     )
   }
 
-  return attach(<App />, html => {
+  return attach(<App />).then(html => {
     expect(html).toEqual('<div data-test="testing"><h1>sup</h1></div>')
   })
 })
@@ -84,7 +83,7 @@ test('simple app with props', () => {
     )
   }
 
-  return attach(<App id="app" class="style" />, html => {
+  return attach(<App id="app" class="style" />).then(html => {
     expect(html).toEqual('<div id="app" class="style"><h1>sup</h1></div>')
   })
 })
@@ -105,7 +104,7 @@ test('style object', () => {
     )
   }
 
-  return attach(<App />, html => {
+  return attach(<App />).then(html => {
     expect(html).toEqual(
       '<div style="background-color: blue; height: 25px; width: 100px; color: white;"><h1>sup</h1></div>'
     )
@@ -120,11 +119,10 @@ test('simple app with props and children', () => {
   return attach(
     <App id="app">
       <h1>sup</h1>
-    </App>,
-    html => {
-      expect(html).toEqual('<div id="app"><h1>sup</h1></div>')
-    }
-  )
+    </App>
+  ).then(html => {
+    expect(html).toEqual('<div id="app"><h1>sup</h1></div>')
+  })
 })
 
 test('simple SVG app', () => {
@@ -143,7 +141,7 @@ test('simple SVG app', () => {
     )
   }
 
-  return attach(<App id="app" class="style" />, (html, dom) => {
+  return attach(<App id="app" class="style" />).then((html, dom) => {
     expect(html).toEqual(
       '<svg id="svg"><circle cx="25" cy="75" r="20" stroke="red" fill="transparent" stroke-width="5"></circle></svg>'
     )
@@ -163,7 +161,7 @@ test('render a fragment', () => {
     )
   }
 
-  return attach(<App />, html => {
+  return attach(<App />).then(html => {
     expect(html).toEqual("<span>what's</span><span>up</span>")
   })
 })

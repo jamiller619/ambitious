@@ -1,7 +1,28 @@
 import ambitious, { Fragment } from '../src'
 import { attach, wait, awaitUpdate } from './utils'
 
-test('keyed update', () => {
+test('simple update', () => {
+  const App = (_, { count, setState }) => {
+    const handleClick = () => {
+      setState({
+        count: count + 1
+      })
+    }
+
+    return <div onClick={handleClick}>{count}</div>
+  }
+
+  App.defaultState = {
+    count: 0
+  }
+
+  return attach(<App />, (html, dom) => {
+    dom.click()
+    awaitUpdate(() => expect(html).toEqual('<div>1</div>'))
+  })
+})
+
+test('keyed update and rearrange', () => {
   const App = (_, { data, setState }) => {
     const handleClick = () => {
       setState({
@@ -41,6 +62,7 @@ test('keyed update', () => {
     const lastChild = dom.lastChild
 
     dom.click()
+
     awaitUpdate(() => {
       expect(firstChild).toBe(dom.lastChild)
       expect(secondChild).toBe(dom.children[1])
@@ -49,15 +71,26 @@ test('keyed update', () => {
   })
 })
 
-test('simple update', () => {
+let clickCounter = 0
+
+test('update with new child', () => {
+  const Counter = ({ count }) => {
+    return count % 2 == 0 ? <span>{count}</span> : <div>{count}</div>
+  }
+
   const App = (_, { count, setState }) => {
     const handleClick = () => {
+      clickCounter += 1
+      console.log(`counter is ${clickCounter}`)
       setState({
         count: count + 1
       })
     }
-
-    return <div onClick={handleClick}>{count}</div>
+    return (
+      <div onClick={handleClick}>
+        <Counter count={count} />
+      </div>
+    )
   }
 
   App.defaultState = {
@@ -66,6 +99,12 @@ test('simple update', () => {
 
   return attach(<App />, (html, dom) => {
     dom.click()
-    awaitUpdate(() => expect(html).toEqual('<div>1</div>'))
+
+    return awaitUpdate(() =>
+      expect(html).toEqual('<div><span>1</span></div>')
+    ).then(() => {
+      dom.click()
+      return awaitUpdate(() => expect(html).toEqual('<div><div>3</div></div>'))
+    })
   })
 })

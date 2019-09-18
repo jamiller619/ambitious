@@ -7,5 +7,5 @@ module.exports = {
   moduleFileExtensions: ['js', 'json', 'jsx'],
   rootDir: process.cwd(),
   roots: ['<rootDir>/test/'],
-  transformIgnorePatterns: ['[/\\\\]node_modules[/\\\\].+\\.(js|jsx|mjs)$']
+  transformIgnorePatterns: ['/test']
 }
