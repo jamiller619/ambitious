@@ -1,19 +1,5 @@
-import ambitious, { render } from '../src'
-
-const attach = (Component, callback) => {
-  document.body.innerHTML = ''
-  const container = document.createElement('main')
-  document.body.appendChild(container)
-
-  render(Component, container)
-
-  return new Promise(resolve => {
-    setTimeout(() => {
-      const dom = document.body.firstChild
-      resolve(callback(dom.innerHTML.toString(), dom, Component))
-    }, 50)
-  })
-}
+import ambitious, { Fragment } from '../src'
+import { attach } from './utils'
 
 test('render a simple component', () => {
   const App = () => {
@@ -164,5 +150,20 @@ test('simple SVG app', () => {
     // The SVG element itself is an HTMLElement, so we get
     // the first child, the "circle" element
     expect(dom.firstChild instanceof SVGElement).toBe(true)
+  })
+})
+
+test('render a fragment', () => {
+  const App = () => {
+    return (
+      <Fragment>
+        <span>what's</span>
+        <span>up</span>
+      </Fragment>
+    )
+  }
+
+  return attach(<App />, html => {
+    expect(html).toEqual("<span>what's</span><span>up</span>")
   })
 })
