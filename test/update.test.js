@@ -9,6 +9,8 @@ test('simple update', () => {
       setState({
         count: count + 1
       })
+
+      console.log(count)
     }
 
     return <div onClick={handleClick}>{count}</div>
@@ -25,6 +27,8 @@ test('simple update', () => {
 })
 
 test('keyed update and rearrange', () => {
+  expect.assertions(3)
+
   const App = (_, { data, setState }) => {
     const handleClick = () => {
       setState({
@@ -65,7 +69,7 @@ test('keyed update and rearrange', () => {
 
     dom.click()
 
-    awaitUpdate(() => {
+    return awaitUpdate(() => {
       expect(firstChild).toBe(dom.lastChild)
       expect(secondChild).toBe(dom.children[1])
       expect(lastChild).toBe(dom.firstChild)
