@@ -187,7 +187,6 @@ const reconciler = {
       .then(() =>
         onNextFrame(() => {
           const oldNode = oldChildComponent.getNode()
-
           const newNode = newChildComponent.render(parentComponent)
 
           oldNode.parentNode.replaceChild(newNode, oldNode)

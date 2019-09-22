@@ -11,13 +11,13 @@ export const wait = time => {
 
 export const awaitUpdate = callback => wait(20).then(callback)
 
-export const attach = Component => {
+export const attach = element => {
   const container = document.createElement('main')
   const { body } = document
   body.innerHTML = ''
   body.appendChild(container)
 
-  render(Component, container)
+  const app = render(element, container)
 
   return new Promise(resolve => {
     setTimeout(() => {
@@ -25,7 +25,7 @@ export const attach = Component => {
       resolve({
         html: dom.innerHTML.toString(),
         dom,
-        Component
+        component: app
       })
     }, 50)
   })

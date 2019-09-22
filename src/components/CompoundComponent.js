@@ -59,17 +59,17 @@ export default {
     return element.type.call(element.type, props, state)
   },
 
-  removeChild () {
-    return this.parent.removeChild(this)
-  },
+  // removeChild () {
+  //   return this.parent.removeChild(this)
+  // },
 
-  replaceChild (newChild) {
-    const lastInstance = this.instance
+  // replaceChild (newChild) {
+  //   const lastInstance = this.instance
 
-    this.instance = newChild
+  //   this.instance = newChild
 
-    return reconciler.replaceChild(this, newChild, lastInstance)
-  },
+  //   return reconciler.replaceChild(this, newChild, lastInstance)
+  // },
 
   update (nextElement) {
     const prevElement = this.element

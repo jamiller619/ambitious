@@ -61,8 +61,6 @@ export default {
     const prevElement = this.element
     const queue = new Queue()
 
-    this.element = nextElement
-
     if (areElementsEqual(prevElement, nextElement)) {
       queue.addTask(() => {
         reconciler.updateProps(
@@ -82,6 +80,8 @@ export default {
       queue.addTask(() =>
         reconciler.replaceChild(this.parent, createComponent(nextElement), this))
     }
+
+    this.element = nextElement
 
     return queue.flush()
   },
