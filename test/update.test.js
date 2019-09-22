@@ -61,10 +61,8 @@ test('component update', done => {
   })
 })
 
-test('rearrange keyed children', () => {
-  expect.assertions(3)
-
-  const App = (_, { data, setState }) => {
+test('rearrange keyed children', done => {
+  const App = (props, { data, setState }) => {
     const handleClick = () => {
       setState({
         data: [...data].reverse()
@@ -97,17 +95,19 @@ test('rearrange keyed children', () => {
     ]
   }
 
-  return attach(<App />).then(({ html, dom }) => {
+  attach(<App />).then(({ dom, component }) => {
     const firstChild = dom.firstChild
     const secondChild = dom.children[1]
     const lastChild = dom.lastChild
 
-    dom.click()
+    getAppRootProps(component).onClick()
 
-    return awaitUpdate(() => {
+    awaitUpdate(() => {
       expect(firstChild).toBe(dom.lastChild)
       expect(secondChild).toBe(dom.children[1])
       expect(lastChild).toBe(dom.firstChild)
+
+      done()
     })
   })
 })
