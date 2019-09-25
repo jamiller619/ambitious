@@ -38,10 +38,11 @@ test('component update', done => {
       setState({
         count: count + 1
       }).then(() => {
-        expect(document.body.firstChild.innerHTML).toEqual(
-          '<div><span>1</span></div>'
-        )
-        done()
+        const expectedHTML =
+          count % 2 === 0
+            ? `<div><span>${count + 1}</span></div>`
+            : `<div><div>${count + 1}</div></div>`
+        expect(document.body.firstChild.innerHTML).toEqual(expectedHTML)
       })
     }
 
@@ -57,7 +58,16 @@ test('component update', done => {
   }
 
   attach(<App />).then(({ component }) => {
-    getAppRootProps(component).onClick()
+    const rootProps = getAppRootProps(component)
+
+    rootProps.onClick()
+
+    awaitUpdate()
+      .then(() => {
+        rootProps.onClick()
+        return awaitUpdate()
+      })
+      .then(done)
   })
 })
 
@@ -102,7 +112,7 @@ test('rearrange keyed children', done => {
 
     getAppRootProps(component).onClick()
 
-    awaitUpdate(() => {
+    awaitUpdate().then(() => {
       expect(firstChild).toBe(dom.lastChild)
       expect(secondChild).toBe(dom.children[1])
       expect(lastChild).toBe(dom.firstChild)

@@ -9,7 +9,7 @@ export const wait = time => {
   })
 }
 
-export const awaitUpdate = callback => wait(20).then(callback)
+export const awaitUpdate = () => wait(20)
 
 export const attach = element => {
   const container = document.createElement('main')

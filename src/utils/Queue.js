@@ -2,21 +2,49 @@
  * batching Queue for DOM manipulations
  * @returns {Queue} an instance of Queue
  */
-export default function Queue () {
+function Queue () {
   this.tasks = []
+  this.scheduled = false
 }
 
 Queue.prototype = {
-  addTask (...task) {
-    this.tasks = [...this.tasks, ...task]
+  constructor: Queue,
+
+  task (task) {
+    this.tasks.push(task)
+
+    return this.flush()
+  },
+
+  pool (task) {
+    this.tasks.push(task)
 
     return this
   },
-  flush () {
-    if (this.tasks.length === 0) {
-      return Promise.resolve()
-    }
 
-    return Promise.all(this.tasks.map(task => task()))
+  flush () {
+    return new Promise(resolve => {
+      if (!this.scheduled) {
+        this.scheduled = true
+
+        const resolveQueue = () => {
+          this.scheduled = false
+
+          resolve()
+        }
+
+        if (this.tasks.length === 0) {
+          resolveQueue()
+        } else {
+          window.requestAnimationFrame(() => {
+            Promise.all(this.tasks.map(task => task())).then(resolveQueue)
+          })
+        }
+      } else {
+        resolve()
+      }
+    })
   }
 }
+
+export default new Queue()

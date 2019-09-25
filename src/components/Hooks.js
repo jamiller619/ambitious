@@ -1,14 +1,13 @@
 import { createEffect, EFFECT_TYPE } from './hookUtils'
-import { isPromise } from '../utils/shared'
 
 const runEffect = (hook, type, data) => {
   const { handler, deps } = hook.effects[type]
 
   hook.effects[type].lastDeps = deps
 
-  const result = handler.apply(handler, data)
-
-  return isPromise(result) ? result : Promise.resolve(result)
+  return new Promise(resolve => {
+    resolve(handler.apply(handler, data))
+  })
 }
 
 /**

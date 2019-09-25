@@ -35,7 +35,7 @@ export const dispatchEffectHelper = (component, type, ...params) => {
         .map(child => dispatchEffectHelper(child, type, [node, ...params]))).then(() => dispatchEffect(component, type, [node, ...params]))
 
   if (type === EFFECT_TYPE.RESOLVED) {
-    return reconciler.whenNodeAttached(component, dispatch)
+    return reconciler.waitForAttachedNode(component).then(dispatch)
   }
 
   return dispatch(component.getNode())

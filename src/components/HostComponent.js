@@ -1,7 +1,7 @@
 import COMPONENT_TYPE from './types'
 import reconciler from '../reconciler'
 import { createComponent } from '../AmbitiousComponent'
-import Queue from '../utils/Queue'
+import queue from '../utils/Queue'
 import { updateChildren } from './updateChildren'
 import { areElementsEqual } from '../AmbitiousElement'
 
@@ -59,31 +59,24 @@ export default {
   // eslint-disable-next-line max-statements
   update (nextElement) {
     const prevElement = this.element
-    const queue = new Queue()
 
     if (areElementsEqual(prevElement, nextElement)) {
-      queue.addTask(() => {
-        reconciler.updateProps(
-          this.node,
-          prevElement,
-          this.element,
-          this.namespace
-        )
-      })
-
-      const childUpdates = updateChildren(this, nextElement)
-
-      if (childUpdates.tasks.length > 0) {
-        queue.addTask(...childUpdates.tasks)
-      }
-    } else {
-      queue.addTask(() =>
-        reconciler.replaceChild(this.parent, createComponent(nextElement), this))
+      return queue
+        .task(() => {
+          reconciler.updateProps(
+            this.node,
+            prevElement,
+            nextElement,
+            this.namespace
+          )
+        })
+        .then(() => updateChildren(this, nextElement))
+        .then(() => {
+          this.element = nextElement
+        })
     }
 
-    this.element = nextElement
-
-    return queue.flush()
+    return this.parent.replaceChild(createComponent(nextElement), this)
   },
 
   render (parent) {

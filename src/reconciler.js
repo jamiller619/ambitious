@@ -1,4 +1,4 @@
-import { onNextFrame, eventsKey, isArray, flatten } from './utils/shared'
+import { eventsKey, isArray, flatten } from './utils/shared'
 import { EFFECT_TYPE, dispatchEffectHelper } from './components/hookUtils'
 
 const XLINK_NS = 'http://www.w3.org/1999/xlink'
@@ -138,9 +138,6 @@ const reconciler = {
     )
   },
 
-  whenNodeAttached: (node, callback) =>
-    reconciler.waitForAttachedNode(node).then(callback),
-
   waitForAttachedNode: component => {
     return new Promise(resolve => {
       checkRender(component, resolve)
@@ -184,45 +181,43 @@ const reconciler = {
 
   replaceChild: (parentComponent, newChildComponent, oldChildComponent) => {
     return dispatchEffectHelper(oldChildComponent, EFFECT_TYPE.CLEANUP)
-      .then(() =>
-        onNextFrame(() => {
-          const oldNode = oldChildComponent.getNode()
-          const newNode = newChildComponent.render(parentComponent)
+      .then(() => {
+        const oldNode = oldChildComponent.getNode()
+        const newNode = newChildComponent.render(parentComponent)
 
-          oldNode.parentNode.replaceChild(newNode, oldNode)
-        }))
+        oldNode.parentNode.replaceChild(newNode, oldNode)
+      })
       .then(() => dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED))
   },
 
   appendChild: (parentComponent, childComponent) => {
     const childNode = childComponent.render(parentComponent)
 
-    return onNextFrame(() => {
-      const parentNode = parentComponent.getNode()
+    if (childNode) {
+      parentComponent.getNode().appendChild(childNode)
+    }
 
-      if (childNode && parentNode) {
-        parentNode.appendChild(childNode)
-      }
-    }).then(() => dispatchEffectHelper(childComponent, EFFECT_TYPE.RESOLVED))
+    return dispatchEffectHelper(childComponent, EFFECT_TYPE.RESOLVED)
   },
 
   removeChild: childComponent => {
-    return dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP)
-      .then(() => reconciler.waitForAttachedNode(childComponent))
-      .then(childNode =>
-        onNextFrame(() => childNode.parentNode.removeChild(childNode)))
+    return dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP).then(() => {
+        const childNode = childComponent.getNode()
+
+        childNode.parentNode.removeChild(childNode)
+      })
   },
 
   insertBefore: (parentComponent, newChildComponent, referenceComponent) => {
-    return onNextFrame(() => {
-      const newNode = newChildComponent.render(parentComponent)
+    const newNode = newChildComponent.render(parentComponent)
 
-      if (newNode) {
-        const refNode = referenceComponent.getNode()
+    if (newNode) {
+      const refNode = referenceComponent.getNode()
 
-        refNode.parentNode.insertBefore(newNode, refNode)
-      }
-    }).then(() => dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED))
+      refNode.parentNode.insertBefore(newNode, refNode)
+    }
+
+    return dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED)
   },
 
   updateTextNode: (component, textContent) => {
@@ -240,12 +235,10 @@ const reconciler = {
         newElement && newElement.props
       )
 
-      onNextFrame(() => {
-        // eslint-disable-next-line guard-for-in
-        for (const attribute in merged) {
-          updateProp(node, attribute, merged[attribute], namespace)
-        }
-      })
+      // eslint-disable-next-line guard-for-in
+      for (const attribute in merged) {
+        updateProp(node, attribute, merged[attribute], namespace)
+      }
     }
 
     return node

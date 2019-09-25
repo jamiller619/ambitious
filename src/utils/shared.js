@@ -7,17 +7,6 @@ const generateId = () =>
 export const eventsKey = `$$events__${generateId()}`
 export const isPromise = obj => obj instanceof Promise
 
-export const onNextFrame = callback =>
-  new Promise(resolve => {
-    window.requestAnimationFrame(time => {
-      if (typeof callback === 'function') {
-        const result = callback.call(callback, time)
-
-        return isPromise(result) ? result : resolve()
-      }
-    })
-  })
-
 export const freeze = Object.freeze ? obj => Object.freeze(obj) : obj => obj
 export const { isArray } = Array
 export const flatten = arr =>
