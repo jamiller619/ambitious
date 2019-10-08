@@ -122,16 +122,8 @@ const updateProp = (node, propName, value, namespace) => {
   }
 }
 
-const checkRender = (component, resolve) => {
-  if (reconciler.isRendered(component)) {
-    resolve(component.getNode())
-  }
-}
-
 const reconciler = {
-  isRendered: component => {
-    const node = component.getNode()
-
+  isRendered: node => {
     return (
       node &&
       (node.nodeType === 11 ? node.childElementCount === 0 : node.isConnected)
@@ -140,19 +132,18 @@ const reconciler = {
 
   waitForAttachedNode: component => {
     return new Promise(resolve => {
-      checkRender(component, resolve)
+      const node = component.getNode()
+
+      if (reconciler.isRendered(node)) {
+        resolve(node)
+      }
 
       const interval = window.setInterval(() => {
-        if (reconciler.isRendered(component)) {
+        if (reconciler.isRendered(node)) {
           window.clearInterval(interval)
-          resolve(component.getNode())
+          resolve(node)
         }
-      }, 20)
-
-      window.setTimeout(() => {
-        window.clearInterval(interval)
-        checkRender(component, resolve)
-      }, 500)
+      }, 2)
     })
   },
 
@@ -164,9 +155,9 @@ const reconciler = {
     }
 
     component.namespace =
-      (parent && parent.namespace != null && parent.namespace) ||
       (element.props && element.props.xmlns) ||
       (element.type === 'svg' && 'http://www.w3.org/2000/svg') ||
+      (parent && parent.namespace != null && parent.namespace) ||
       null
 
     return reconciler.updateProps(
@@ -201,9 +192,9 @@ const reconciler = {
   },
 
   removeChild: childComponent => {
-    return dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP).then(() => {
-        const childNode = childComponent.getNode()
+    const childNode = childComponent.getNode()
 
+    return dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP).then(() => {
         childNode.parentNode.removeChild(childNode)
       })
   },

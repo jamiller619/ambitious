@@ -5,9 +5,7 @@ const runEffect = (hook, type, data) => {
 
   hook.effects[type].lastDeps = deps
 
-  return new Promise(resolve => {
-    resolve(handler.apply(handler, data))
-  })
+  return Promise.resolve(handler.apply(handler, data))
 }
 
 /**

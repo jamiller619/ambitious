@@ -1,5 +1,5 @@
 import reconciler from '../reconciler'
-import { isArray } from '../utils/shared'
+import { isArray, flatten } from '../utils/shared'
 
 export const EFFECT_TYPE = {
   RESOLVED: 'resolved',
@@ -28,11 +28,18 @@ const dispatchEffect = (component, type, ...params) => {
     : Promise.resolve()
 }
 
+const flattenChildren = component => {
+  return flatten(component.getChildren().map(child => flattenChildren(child) && child))
+}
+
 export const dispatchEffectHelper = (component, type, ...params) => {
-  const dispatch = node =>
-    Promise.all(component
-        .getChildren()
-        .map(child => dispatchEffectHelper(child, type, [node, ...params]))).then(() => dispatchEffect(component, type, [node, ...params]))
+  const dispatch = node => {
+    const flattened = [...flattenChildren(component), component]
+
+    return Promise.all(flattened.map(flattenedComponent => {
+        return dispatchEffect(flattenedComponent, type, [node, ...params])
+      }))
+  }
 
   if (type === EFFECT_TYPE.RESOLVED) {
     return reconciler.waitForAttachedNode(component).then(dispatch)

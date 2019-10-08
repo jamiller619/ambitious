@@ -24,25 +24,25 @@ Queue.prototype = {
 
   flush () {
     return new Promise(resolve => {
-      if (!this.scheduled) {
+      const resolveQueue = callback => {
+        this.scheduled = false
+
+        return callback()
+      }
+
+      if (this.scheduled === false) {
         this.scheduled = true
 
-        const resolveQueue = () => {
-          this.scheduled = false
+        return window.requestAnimationFrame(() => {
+          while (this.tasks.length) {
+            this.tasks.shift()()
+          }
 
-          resolve()
-        }
-
-        if (this.tasks.length === 0) {
-          resolveQueue()
-        } else {
-          window.requestAnimationFrame(() => {
-            Promise.all(this.tasks.map(task => task())).then(resolveQueue)
-          })
-        }
-      } else {
-        resolve()
+          return resolveQueue(resolve)
+        })
       }
+
+      return resolveQueue(resolve)
     })
   }
 }

@@ -26,7 +26,9 @@ const extend = Base => {
     setParent (parent) {
       if (parent && this.parent !== parent) {
         this.parent = parent
-        this.namespace = parent.namespace
+        if (parent.namespace) {
+          this.namespace = parent.namespace
+        }
       }
     }
   }

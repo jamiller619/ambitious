@@ -1,6 +1,6 @@
 /* eslint-disable no-loop-func */
 /* eslint-disable max-depth */
-import { areElementsEqual } from '../AmbitiousElement'
+import { isSameElement } from '../AmbitiousElement'
 import { createComponent } from '../AmbitiousComponent'
 import queue from '../utils/Queue'
 import reconciler from '../reconciler'
@@ -8,7 +8,7 @@ import reconciler from '../reconciler'
 // eslint-disable-next-line max-lines-per-function, max-statements
 export const updateChildren = (currentComponent, nextElement) => {
   if (nextElement == null) {
-    return queue.task(() =>
+    return queue.pool(() =>
       currentComponent.parent.removeChild(currentComponent))
   }
 
@@ -24,8 +24,11 @@ export const updateChildren = (currentComponent, nextElement) => {
     const nextElementChild = nextElementChildren[i]
 
     if (!nextElementChild) {
-      queue.pool(() =>
-        currentComponent.removeChild(currentComponentChildren[i]))
+      const currentChild = currentComponentChildren[i]
+
+      if (currentChild) {
+        queue.pool(() => currentComponent.removeChild(currentChild))
+      }
     } else {
       const currentChild = nextElementChild.key
         ? currentComponentChildren.find(child => child.element.key === nextElementChild.key)
@@ -49,27 +52,28 @@ export const updateChildren = (currentComponent, nextElement) => {
               ))
           }
         } else if (
-          areElementsEqual(currentChild.element, nextElementChild, {
+          isSameElement(currentChild.element, nextElementChild, {
             ignoreOrder: true
           })
         ) {
-          currentChild.update(nextElementChild)
+          queue.pool(() => currentChild.update(nextElementChild))
         } else {
           const nextElementChildMatch = nextElementChildren
             .slice(i)
-            .find(child =>
-              areElementsEqual(child, currentChild.element, {
+            .findIndex(child =>
+              isSameElement(child, currentChild.element, {
                 ignoreOrder: true
               }))
 
-          if (nextElementChildMatch) {
-            queue.pool(() =>
+          if (nextElementChildMatch !== -1) {
+            queue.pool(() => {
               currentComponent.insertBefore(
-                createComponent(nextElementChildMatch),
-                i - 1
-              ))
+                createComponent(nextElementChild),
+                nextElementChildMatch - 1
+              )
+            })
           } else {
-            currentChild.update(nextElementChild)
+            queue.pool(() => currentChild.update(nextElementChild))
           }
         }
       } else {

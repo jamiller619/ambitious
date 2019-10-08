@@ -40,8 +40,8 @@ test('component update', done => {
       }).then(() => {
         const expectedHTML =
           count % 2 === 0
-            ? `<div><span>${count + 1}</span></div>`
-            : `<div><div>${count + 1}</div></div>`
+            ? `<div><div>${count}</div></div>`
+            : `<div><span>${count}</span></div>`
         expect(document.body.firstChild.innerHTML).toEqual(expectedHTML)
       })
     }
@@ -73,14 +73,14 @@ test('component update', done => {
 
 test('rearrange keyed children', done => {
   const App = (props, { data, setState }) => {
-    const handleClick = () => {
+    const updateState = () => {
       setState({
         data: [...data].reverse()
       })
     }
 
     return (
-      <ul onClick={handleClick}>
+      <ul onClick={updateState}>
         {data.map(item => (
           <li key={item.id}>{item.text}</li>
         ))}
@@ -121,3 +121,38 @@ test('rearrange keyed children', done => {
     })
   })
 })
+
+// test('add and remove an un-keyed child from the beginning of a list', done => {
+//   const Child = () => {
+//     return <div>child one</div>
+//   }
+
+//   const App = (props, { showFirstChild, setState }) => {
+//     const updateState = () => {
+//       setState({
+//         showFirstChild: !showFirstChild
+//       }).then(() => {
+//         expect(document.body.firstChild.innerHTML).toEqual(
+//           '<div><div>child two</div></div>'
+//         )
+//       })
+//     }
+
+//     return (
+//       <div onClick={updateState}>
+//         {showFirstChild && <Child />}
+//         <div>child two</div>
+//       </div>
+//     )
+//   }
+
+//   App.defaultState = {
+//     showFirstChild: false
+//   }
+
+//   attach(<App />).then(({ component }) => {
+//     getAppRootProps(component).onClick()
+
+//     awaitUpdate().then(() => {})
+//   })
+// })

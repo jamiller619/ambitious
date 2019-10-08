@@ -3,7 +3,7 @@ import reconciler from '../reconciler'
 import { createComponent } from '../AmbitiousComponent'
 import queue from '../utils/Queue'
 import { updateChildren } from './updateChildren'
-import { areElementsEqual } from '../AmbitiousElement'
+import { isSameElement } from '../AmbitiousElement'
 
 export default {
   $$typeof: COMPONENT_TYPE.HOST_COMPONENT,
@@ -19,7 +19,7 @@ export default {
   },
 
   getChildren () {
-    return this.children || []
+    return this.children
   },
 
   getNode () {
@@ -51,6 +51,10 @@ export default {
   removeChild (oldChild) {
     const oldChildIndex = this.children.findIndex(child => child === oldChild)
 
+    if (oldChildIndex === -1) {
+      return Promise.resolve()
+    }
+
     this.children.splice(oldChildIndex, 1)
 
     return reconciler.removeChild(oldChild)
@@ -60,7 +64,7 @@ export default {
   update (nextElement) {
     const prevElement = this.element
 
-    if (areElementsEqual(prevElement, nextElement)) {
+    if (isSameElement(prevElement, nextElement)) {
       return queue
         .task(() => {
           reconciler.updateProps(
@@ -72,11 +76,13 @@ export default {
         })
         .then(() => updateChildren(this, nextElement))
         .then(() => {
-          this.element = nextElement
+          return Promise.resolve(this.element = nextElement)
         })
     }
 
-    return this.parent.replaceChild(createComponent(nextElement), this)
+    return this.parent
+      ? this.parent.replaceChild(createComponent(nextElement), this)
+      : Promise.resolve(null)
   },
 
   render (parent) {

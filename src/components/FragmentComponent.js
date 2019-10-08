@@ -1,6 +1,6 @@
 import COMPONENT_TYPE from './types'
 import { updateChildren } from './updateChildren'
-import { areElementsEqual } from '../AmbitiousElement'
+import { isSameElement } from '../AmbitiousElement'
 import HostComponent from './HostComponent'
 
 export default {
@@ -12,7 +12,7 @@ export default {
 
     this.element = nextElement
 
-    if (areElementsEqual(prevElement, nextElement)) {
+    if (isSameElement(prevElement, nextElement)) {
       return updateChildren(this, nextElement)
     }
 

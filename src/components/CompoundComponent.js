@@ -1,5 +1,5 @@
 import COMPONENT_TYPE from './types'
-import { areElementsEqual } from '../AmbitiousElement'
+import { isSameElement } from '../AmbitiousElement'
 import reconciler from '../reconciler'
 import { createComponent } from '../AmbitiousComponent'
 import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
@@ -36,7 +36,7 @@ export default {
   },
 
   getChildren () {
-    return (this.instance && this.instance.getChildren()) || []
+    return this.instance ? [this.instance] : []
   },
 
   getNode () {
@@ -64,23 +64,19 @@ export default {
   },
 
   replaceChild (newChild) {
-    const lastInstance = this.instance
-
-    this.instance = newChild
-
-    return reconciler.replaceChild(this, newChild, lastInstance)
+    return this.parent.replaceChild(newChild, this)
   },
 
   update (nextElement) {
     const prevElement = this.element
 
-    if (areElementsEqual(prevElement, nextElement)) {
+    if (isSameElement(prevElement, nextElement)) {
       this.element = nextElement
 
       return this.renderInstance(nextElement)
     }
 
-    return this.parent.replaceChild(createComponent(nextElement), this)
+    return this.replaceChild(createComponent(nextElement))
   },
 
   render (parent) {
