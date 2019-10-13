@@ -37,6 +37,10 @@ export default {
   insertBefore (newChild, referenceIndex) {
     const refChild = this.children[referenceIndex]
 
+    if (this.children.length === referenceIndex) {
+      return reconciler.appendChild(this, newChild)
+    }
+
     this.children.splice(referenceIndex, 0, newChild)
 
     return reconciler.insertBefore(this, newChild, refChild)
@@ -50,10 +54,6 @@ export default {
 
   removeChild (oldChild) {
     const oldChildIndex = this.children.findIndex(child => child === oldChild)
-
-    if (oldChildIndex === -1) {
-      return Promise.resolve()
-    }
 
     this.children.splice(oldChildIndex, 1)
 
@@ -96,7 +96,7 @@ export default {
 
     this.node = reconciler.renderNode(this)
 
-    this.children.forEach(child => reconciler.appendChild(this, child))
+    this.appendChildren()
 
     return this.node
   }

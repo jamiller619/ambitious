@@ -3,6 +3,7 @@ import HostComponentBody from './components/HostComponent'
 import CompoundComponentBody from './components/CompoundComponent'
 import FragmentComponentBody from './components/FragmentComponent'
 import COMPONENT_TYPE from './components/types'
+import reconciler from './reconciler'
 
 const extend = Base => {
   const Component = {
@@ -23,6 +24,10 @@ const extend = Base => {
   AmbitiousComponent.prototype = {
     ...Component,
     constructor: AmbitiousComponent,
+    appendChildren () {
+      return this.getChildren().map(child =>
+        reconciler.appendChild(this, child))
+    },
     setParent (parent) {
       if (parent && this.parent !== parent) {
         this.parent = parent
