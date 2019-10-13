@@ -1,6 +1,5 @@
 import COMPONENT_TYPE from './types'
 import { isSameElement } from '../AmbitiousElement'
-import reconciler from '../reconciler'
 import { createComponent } from '../AmbitiousComponent'
 import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
 import { Store } from './Store'

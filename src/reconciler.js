@@ -160,14 +160,13 @@ const reconciler = {
       (parent && parent.namespace != null && parent.namespace) ||
       null
 
-    return reconciler.updateProps(
-      component.namespace
-        ? document.createElementNS(component.namespace, element.type)
-        : document.createElement(element.type),
-      null,
-      element,
-      component.namespace
-    )
+    const node = component.namespace
+      ? document.createElementNS(component.namespace, element.type)
+      : document.createElement(element.type)
+
+    reconciler.updateProps(node, null, element, component.namespace)
+
+    return node
   },
 
   replaceChild: (parentComponent, newChildComponent, oldChildComponent) => {
@@ -175,8 +174,10 @@ const reconciler = {
       .then(() => {
         const oldNode = oldChildComponent.getNode()
         const newNode = newChildComponent.render(parentComponent)
+        const parentNode =
+          (oldNode && oldNode.parentNode) || parentComponent.getNode()
 
-        oldNode.parentNode.replaceChild(newNode, oldNode)
+        parentNode.replaceChild(newNode, oldNode)
       })
       .then(() => dispatchEffectHelper(newChildComponent, EFFECT_TYPE.RESOLVED))
   },
@@ -184,7 +185,7 @@ const reconciler = {
   appendChild: (parentComponent, childComponent) => {
     const childNode = childComponent.render(parentComponent)
 
-    if (childNode) {
+    if (childNode != null) {
       parentComponent.getNode().appendChild(childNode)
     }
 
@@ -231,8 +232,6 @@ const reconciler = {
         updateProp(node, attribute, merged[attribute], namespace)
       }
     }
-
-    return node
   }
 }
 
