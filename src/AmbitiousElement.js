@@ -48,7 +48,7 @@ export const isSameElement = (a, b, { ignoreOrder = false } = {}) => {
 }
 
 export const createElement = (type, config, ...children) => {
-  if (typeof type === 'object') {
+  if (type != null && type !== false && typeof type === 'object') {
     if (type.$$typeof === AMBITIOUS_ELEMENT) return type
 
     return AmbitiousElement(type)
