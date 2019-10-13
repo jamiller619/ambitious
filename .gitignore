@@ -3,4 +3,5 @@
 *workspace*
 **/dist
 **/coverage
+.vscode
 yarn-error.log
