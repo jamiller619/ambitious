@@ -28,6 +28,10 @@ export default {
     })
   },
 
+  getResolvedTargets () {
+    return this.getChildren().map(child => child.getResolvedTargets())
+  },
+
   render (parent) {
     this.setParent(parent)
 

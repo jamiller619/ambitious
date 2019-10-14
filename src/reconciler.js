@@ -85,6 +85,12 @@ const updateProp = (node, propName, value, namespace) => {
         }
       })
     }
+  } else if (propName === 'ref') {
+    if (typeof value === 'function') {
+      value(node)
+    } else {
+      throw Error(`The "ref" prop must be a function, instead of type "${typeof value}"`)
+    }
   } else if (!reservedPropNames.includes(propName)) {
     if (namespace) {
       const name = propName.replace(/^xlink:?/u, '')
@@ -123,7 +129,9 @@ const updateProp = (node, propName, value, namespace) => {
 }
 
 const reconciler = {
-  isRendered: node => {
+  isRendered: component => {
+    const node = component.getNode()
+
     return (
       node &&
       (node.nodeType === 11 ? node.childElementCount === 0 : node.isConnected)
@@ -132,16 +140,10 @@ const reconciler = {
 
   waitForAttachedNode: component => {
     return new Promise(resolve => {
-      const node = component.getNode()
-
-      if (reconciler.isRendered(node)) {
-        resolve(node)
-      }
-
       const interval = window.setInterval(() => {
-        if (reconciler.isRendered(node)) {
+        if (reconciler.isRendered(component)) {
           window.clearInterval(interval)
-          resolve(node)
+          resolve(component.getResolvedTargets())
         }
       }, 2)
     })
@@ -196,7 +198,9 @@ const reconciler = {
     const childNode = childComponent.getNode()
 
     return dispatchEffectHelper(childComponent, EFFECT_TYPE.CLEANUP).then(() => {
-        childNode.parentNode.removeChild(childNode)
+        if (childNode.parentNode) {
+          childNode.parentNode.removeChild(childNode)
+        }
       })
   },
 

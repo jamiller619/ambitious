@@ -42,6 +42,10 @@ export default {
     return (this.instance && this.instance.getNode()) || null
   },
 
+  getResolvedTargets () {
+    return (this.instance && this.instance.getResolvedTargets()) || null
+  },
+
   renderElement (element) {
     const props = {
       ...element.props,

@@ -26,6 +26,10 @@ export default {
     return this.node
   },
 
+  getResolvedTargets () {
+    return this.node
+  },
+
   replaceChild (newChild, oldChild) {
     const oldChildIndex = this.children.findIndex(child => child === oldChild)
 
