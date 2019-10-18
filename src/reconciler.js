@@ -1,5 +1,6 @@
 import { eventsKey, isArray, flatten } from './utils/shared'
-import { EFFECT_TYPE, dispatchEffectHelper } from './components/hookUtils'
+import { EFFECT_TYPE } from './components/hooks'
+import { dispatchEffectHelper } from './components/hookUtils'
 
 const XLINK_NS = 'http://www.w3.org/1999/xlink'
 const reservedPropNames = ['children', 'useEffect']

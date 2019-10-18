@@ -1,9 +1,9 @@
 import COMPONENT_TYPE from './types'
 import { isSameElement } from '../AmbitiousElement'
 import { createComponent } from '../AmbitiousComponent'
-import { EFFECT_TYPE, dispatchEffectHelper } from './hookUtils'
+import { dispatchEffectHelper } from './hookUtils'
 import { Store } from './Store'
-import { Hooks } from './Hooks'
+import { EFFECT_TYPE, Hooks } from './Hooks'
 
 export default {
   $$typeof: COMPONENT_TYPE.COMPOUND_COMPONENT,
@@ -49,9 +49,7 @@ export default {
   renderElement (element) {
     const props = {
       ...element.props,
-      useEffect: this.hooks
-        .registerEffect(EFFECT_TYPE.RESOLVED)
-        .bind(this.hooks)
+      useEffect: this.hooks.subscribe(EFFECT_TYPE.RESOLVED).bind(this.hooks)
     }
 
     const state = {

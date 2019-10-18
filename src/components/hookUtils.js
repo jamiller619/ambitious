@@ -1,30 +1,10 @@
+import { EFFECT_TYPE } from './Hooks'
 import reconciler from '../reconciler'
-import { isArray, flatten } from '../utils/shared'
-
-export const EFFECT_TYPE = {
-  RESOLVED: 'resolved',
-  CLEANUP: 'cleanup'
-}
-
-// eslint-disable-next-line max-params
-export const createEffect = (hook, type, handler, deps) => {
-  const prevEffect = hook.effects[type]
-  const lastDeps = (prevEffect && prevEffect.deps) || null
-
-  if (deps && !isArray(deps)) {
-    throw new Error('Hook dependencies must be an array.')
-  }
-
-  return {
-    handler,
-    deps,
-    lastDeps
-  }
-}
+import { flatten } from '../utils/shared'
 
 const dispatchEffect = (component, type, ...params) => {
   return component.hooks
-    ? component.hooks.dispatchEffect(type, ...params)
+    ? component.hooks.dispatch(type, ...params)
     : Promise.resolve()
 }
 
