@@ -89,6 +89,8 @@ const updateProp = (node, propName, value, namespace) => {
   } else if (propName === 'ref') {
     if (typeof value === 'function') {
       value(node)
+    } else if (Object.hasOwnProperty.call(value, 'current')) {
+      value.current = node
     } else {
       throw Error(`The "ref" prop must be a function, instead of type "${typeof value}"`)
     }
