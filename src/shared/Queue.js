@@ -8,8 +8,6 @@ function Queue () {
 }
 
 Queue.prototype = {
-  constructor: Queue,
-
   task (task) {
     this.tasks.push(task)
 

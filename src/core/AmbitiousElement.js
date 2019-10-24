@@ -1,9 +1,19 @@
-import { flatten, freeze } from './utils/shared'
+import { flatten, freeze } from '../shared/utils'
 
 const AMBITIOUS_ELEMENT = Symbol('ambitious.element')
 
-// eslint-disable-next-line func-style, max-params
-const AmbitiousElement = function AmbitiousElement (
+/* eslint-disable max-params */
+/**
+ * The element is the building block for an Ambitious app.
+ * These form the core representation of our view and used
+ * in the reconciliation of views.
+ * @param {string|Function|Object} type The element's type
+ * @param {string} key The element's unique key
+ * @param {Object} props The props object
+ * @param {number} index The element's index within its
+ * @returns {Object} Returns an object representation
+ */
+function AmbitiousElement (
   type,
   key = null,
   props = { children: [] },
@@ -17,6 +27,7 @@ const AmbitiousElement = function AmbitiousElement (
     props
   })
 }
+/* eslint-enable max-params */
 
 const assignIndex = (element, index) => {
   if (typeof element !== 'object') {
@@ -31,7 +42,7 @@ const assignIndex = (element, index) => {
   )
 }
 
-export const isSameElement = (a, b, { ignoreOrder = false } = {}) => {
+export const areElementsEqual = (a, b, { ignoreOrder = false } = {}) => {
   if (typeof a !== 'object' || typeof b !== 'object') {
     return a === b
   }
@@ -47,6 +58,7 @@ export const isSameElement = (a, b, { ignoreOrder = false } = {}) => {
   return true
 }
 
+/* eslint-disable eqeqeq */
 export const createElement = (type, config, ...children) => {
   if (type != null && type !== false && typeof type === 'object') {
     if (type.$$typeof === AMBITIOUS_ELEMENT) return type
@@ -63,6 +75,7 @@ export const createElement = (type, config, ...children) => {
       .filter(child => child != null && child !== false)
       .map(assignIndex)
   }
+  /* eslint-enable eqeqeq */
 
   return AmbitiousElement(type, key, props)
 }

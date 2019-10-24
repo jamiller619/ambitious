@@ -1,4 +1,4 @@
-import { isPromise } from './shared'
+import { isPromise } from './utils'
 
 const cacheStore = new WeakMap()
 
