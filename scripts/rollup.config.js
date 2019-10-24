@@ -9,12 +9,21 @@ const defs = {
   // eslint-disable-next-line no-undef
   input: process.env.npm_package_main,
   output: {
+    exports: 'named',
     interop: false,
     sourcemap: true
   },
   plugins: [
     resolve({
       browser: true
+    }),
+    commonjs({
+      namedExports: {
+        // left-hand side can be an absolute path, a path
+        // relative to the current directory, or the name
+        // of a module in node_modules
+        'tiny-emitter': ['Emitter']
+      }
     }),
     babel({
       exclude: 'node_modules/**'
@@ -40,6 +49,6 @@ export default [
       format: 'cjs',
       file: './dist/ambitious/ambitious.min.js'
     },
-    plugins: [...defs.plugins, commonjs(), minify()]
+    plugins: [...defs.plugins, minify()]
   }
 ]
